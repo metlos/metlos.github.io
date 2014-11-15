@@ -1,0 +1,36 @@
+@import url(http://fonts.googleapis.com/css?family=Signika:300|Merriweather&subset=latin,latin-ext);
+
+html, body {
+    font-family: Merriweather;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    display: table;
+    background-color: #202020;
+    color: #bbbbbb;
+    font-size: 14pt;
+}
+
+h1,h2,h3,h4,h5,h6 {
+        font-family: Signika;
+}
+
+#content {
+    display: table-cell;
+    text-align: center;
+    vertical-align: middle
+}
+
+.big {
+    font-size: 80pt;
+}
+
+@media (max-width: 900px) {
+    .big {
+        font-size: 40pt;
+    }
+}
+
+
+
