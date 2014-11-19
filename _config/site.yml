@@ -14,13 +14,10 @@ asciidoctor:
     source-highlighter: coderay
     coderay-css: style
 
-disqus: 'lukaskrejcipw'
-disqus_generate_id: true
-
 scss:
   :line_numbers: false
   :style: :expanded
-  
+
 profiles:
   dev:
     base_url: "http://localhost:4242"
@@ -30,6 +27,9 @@ profiles:
     disqus_developer: true
   production:
     base_url: 'http://lukas.krejci.pw'
+    google_analytics: UA-56804098-1
+    disqus: 'lukaskrejcipw'
+    disqus_generate_id: true
     asciidoctor:
       :attributes:
          base_url: 'http://lukas.krejci.pw'

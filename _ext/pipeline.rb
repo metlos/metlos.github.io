@@ -13,4 +13,6 @@ Awestruct::Extensions::Pipeline.new do
   #extension Awestruct::Extensions::TagCloud.new :posts, 'posts/tags/index.html', :layout => 'base', :title => "Tags"  
   extension Awestruct::Extensions::Disqus.new()
   extension Awestruct::Extensions::Pager.new 'pager'
+  
+  helper Awestruct::Extensions::GoogleAnalytics
 end
