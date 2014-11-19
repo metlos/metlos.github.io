@@ -2,13 +2,13 @@
 <feed xml:lang="en-US" xmlns="http://www.w3.org/2005/Atom">
   <id>http://lukas.krejci.pw/</id>
   <title>Reinventing The Wheel</title>
-  <updated>2014-11-19T12:51:11+01:00</updated>
+  <updated>2014-11-19T13:21:59+01:00</updated>
   <link href="http://lukas.krejci.pw/blog.atom" rel="self" type="application/atom+xml" />
   <link href="http://lukas.krejci.pw/" rel="alternate" type="text/html" />
   <entry>
     <id>http://lukas.krejci.pw/posts/2014/03/26/my-git-aliases/</id>
     <title>My git aliases</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2014-03-26T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2014/03/26/my-git-aliases/" rel="alternate" type="text/html" />
     <category term="git"></category>
@@ -44,7 +44,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2013/09/05/phantom-reads-and-data-paging/</id>
     <title>Phantom reads and data paging</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2013-09-05T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2013/09/05/phantom-reads-and-data-paging/" rel="alternate" type="text/html" />
     <category term="rhq"></category>
@@ -155,7 +155,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2012/09/27/scripting-news-in-rhq-4-5-0/</id>
     <title>Scripting News in RHQ 4.5.0</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2012-09-27T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2012/09/27/scripting-news-in-rhq-4-5-0/" rel="alternate" type="text/html" />
     <category term="java"></category>
@@ -315,7 +315,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2012/09/14/the-dark-powers-of-powermock/</id>
     <title>The Dark Powers of PowerMock</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2012-09-14T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2012/09/14/the-dark-powers-of-powermock/" rel="alternate" type="text/html" />
     <category term="java"></category>
@@ -539,7 +539,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2012/07/12/rhq-speaks-python/</id>
     <title>RHQ speaks Python</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2012-07-12T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2012/07/12/rhq-speaks-python/" rel="alternate" type="text/html" />
     <category term="java"></category>
@@ -758,7 +758,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2012/03/09/rhq-meets-arquillian/</id>
     <title>RHQ meets Arquillian</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2012-03-09T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2012/03/09/rhq-meets-arquillian/" rel="alternate" type="text/html" />
     <category term="java"></category>
@@ -916,7 +916,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2012/02/06/securing-rhino-in-java6/</id>
     <title>Securing Rhino in Java6</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2012-02-06T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2012/02/06/securing-rhino-in-java6/" rel="alternate" type="text/html" />
     <category term="java"></category>
@@ -1025,7 +1025,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2012/02/06/rhq-cli-over-xmpp/</id>
     <title>RHQ CLI over XMPP</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2012-02-06T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2012/02/06/rhq-cli-over-xmpp/" rel="alternate" type="text/html" />
     <category term="java"></category>
@@ -1083,7 +1083,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2012/01/13/git-merging-after-a-revert/</id>
     <title>Git - merging after a revert</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2012-01-13T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2012/01/13/git-merging-after-a-revert/" rel="alternate" type="text/html" />
     <category term="git"></category>
@@ -1176,7 +1176,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2011/10/10/using-byteman-to-detect-native-memory-leaks/</id>
     <title>Using Byteman to detect native memory leaks</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2011-10-10T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2011/10/10/using-byteman-to-detect-native-memory-leaks/" rel="alternate" type="text/html" />
     <category term="java"></category>
@@ -1281,7 +1281,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2011/08/04/making-testng-listeners-apply-to-only-certain-classes/</id>
     <title>Making TestNG @Listeners apply to only certain classes</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2011-08-04T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2011/08/04/making-testng-listeners-apply-to-only-certain-classes/" rel="alternate" type="text/html" />
     <category term="java"></category>
@@ -1444,7 +1444,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2011/06/23/properties-referencing-each-other/</id>
     <title>Properties referencing each other</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2011-06-23T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2011/06/23/properties-referencing-each-other/" rel="alternate" type="text/html" />
     <category term="java"></category>
@@ -1962,7 +1962,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2011/03/30/planning-configuration-and-templates-exportimport-in-rhq/</id>
     <title>Planning configuration and templates export/import in RHQ</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2011-03-30T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2011/03/30/planning-configuration-and-templates-exportimport-in-rhq/" rel="alternate" type="text/html" />
     <category term="rhq"></category>
@@ -2111,7 +2111,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2011/03/08/scripted-alert-notifications-in-rhq/</id>
     <title>Scripted alert notifications in RHQ</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2011-03-08T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2011/03/08/scripted-alert-notifications-in-rhq/" rel="alternate" type="text/html" />
     <category term="rhq"></category>
@@ -2297,7 +2297,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2010/10/06/upgrading-resources-in-rhq/</id>
     <title>Upgrading Resources In RHQ</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2010-10-06T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2010/10/06/upgrading-resources-in-rhq/" rel="alternate" type="text/html" />
     <category term="rhq"></category>
@@ -2422,7 +2422,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2010/09/20/database-setup-for-testng-tests/</id>
     <title>Database setup for TestNG tests</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2010-09-20T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2010/09/20/database-setup-for-testng-tests/" rel="alternate" type="text/html" />
     <category term="java"></category>
@@ -2606,7 +2606,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2010/09/15/how-to-export-data-from-a-db-using-jpa-model/</id>
     <title>How to export data from a DB using JPA model</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2010-09-15T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2010/09/15/how-to-export-data-from-a-db-using-jpa-model/" rel="alternate" type="text/html" />
     <category term="java"></category>
@@ -2825,7 +2825,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2010/05/11/measuring-ui-performance/</id>
     <title>Measuring UI Performance</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2010-05-11T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2010/05/11/measuring-ui-performance/" rel="alternate" type="text/html" />
     <category term="java"></category>
@@ -3060,7 +3060,7 @@
   <entry>
     <id>http://lukas.krejci.pw/posts/2010/04/09/hello-world/</id>
     <title>System.println(&quot;Hello world!&quot;);</title>
-    <updated>2014-11-19T12:51:11+01:00</updated>
+    <updated>2014-11-19T13:21:59+01:00</updated>
     <published>2010-04-09T00:00:00+00:00</published>
     <link href="http://lukas.krejci.pw/posts/2010/04/09/hello-world/" rel="alternate" type="text/html" />
     <summary>
