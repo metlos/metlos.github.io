@@ -1,0 +1,8 @@
+---
+:title: System.println("Hello world!");
+:tags: []
+---
+
+Well, the time has come for me to reinvent the wheel. This is going to
+be a blog about stuff that I find interesting as I move along my way of
+an open-source developer.

@@ -1,0 +1,117 @@
+---
+:title: RHQ meets Arquillian
+:tags: [java,rhq,arquillian,testing]
+---
+
+Historically, RHQ has had a little bit of a problem with test coverage
+of its various (agent) plugins. There is a multitude of problems with
+testing these but the following two are, IMHO, the main ones:
+
+Managed Resources
++++++++++++++++++
+
+You somehow need to have the managed resource available for the plugin
+to connect to (i.e. you need to have the JBoss AS, Postgres or whatever
+your plugin manages). This is always a problem for a clean quick unit
+test. You either somehow need to mock the managed resource (try that
+with Postgres) or you need to have a way of configuring your test to get
+at or start the managed resource. This is where Arquillian certainly can
+come to the rescue with its ability to manage the lifecycle of its
+"containers" (for managed resources that have an Arquillian extension,
+like JBoss AS) but generally this needs to be in the "hands" of the
+tests for each plugin. There are a million ways the plugins talk to
+their managed resources and so trying to come up with a generic solution
+to start, stop and configure them would IMHO create more problems than
+it would solve.
+
+Setting up Agent Environment
+++++++++++++++++++++++++++++
+
+While not even too hard, running your test in RHQ's plugin container
+requires a little bit of setup. It is important to realize that if you
+want your tests to be run inside a real plugin container (i.e. "almost
+an RHQ agent"), it is not enough to have your dependencies on your test
+classpath. The thing is that the plugin container is a container of its
+own - it has its own deployment requirements and classloading policies.
+It is best to think about deploying a plugin into RHQ agent as deploying
+a webapp into Tomcat - you wouldn't expect to be able to test the webapp
+in Tomcat just by virtue of having them both on the classpath and
+starting Tomcat.
+
+So to put it straight, you need to jump through some maven and antrun
+hoops to package your plugin (and any other plugin it depends on) and
+put them in defined locations, where the plugin container can then pick
+them from. Also, if you want to take advantage of our native APIs to
+obtain running processes, etc., you need to use another bucket of
+`antrun` incantations in your POM to set that up.
+
+Previous Attempts
++++++++++++++++++
+
+The two problems outlined above caused that the test coverage of our
+plugins is rather low. We always knew this sucked and there have been
+attempts to change that.
+
+A `ComponentTest` class used in some of our plugins is an attempt at
+testing the plugins out-of-container, bootstrapping them with some
+required input. Advantage of this approach is that you don't need to
+care about the plugin container and its intricacies, disadvantage being
+that you don't get to test your plugin in an environment it will be
+deployed to. Also, you need to implement support for bootstrapping the
+parameters for any plugin facet your plugin implements - in the end
+you'd end up reimplementing large parts of the plugin container just for
+the testing needs.
+
+Another attempt was the `@PluginContainerSetup` annotation that took
+care of the configuration and lifecycle of the plugin container. The
+advantage was that you got access to a real plugin container running
+with your plugins, disadvantage being that you still were required to
+perform some maven and antrun artistry so that the plugin container
+could find all the plugins and libraries you'd need.
+
+Enter Arquillian
+++++++++++++++++
+
+As I already hinted at above, the RHQ agent shares a lot of similarities
+with EE/Servlet containers from the deployment point of view. Arquillian
+was therefore an obvious choice to try and solve our plugin test
+problems once and for all (well, this is a lie - the problem with having
+to have a managed resource available for the test is a problem that
+cannot be reasonably solved using a single solution).
+
+So what is this integration about? It certainly won't help you, as the
+plugin developer, with connecting to a managed resource you're creating
+your plugin for. But it *does* bring you a lot of convenience over the
+previous state of things if you want to test your plugin in container.
+
+Most importantly there is no more any maven and/or antrun required to
+test your plugin in-container. You just define your plugin in the
+Arquillian way using the `@Deployment` annotation (and you can "attach"
+to it any another plugins it depends on by instructing Arquillian to use
+the maven resolver). Using `arquillian.xml` (yes, a configuration file
+but an order of magnitude shorter and much more focused and simple than
+`pom.xml`), you can configure your container to use RHQ's native APIs by
+flipping one config property to true. You can declaratively say you want
+to run discovery of managed resources (using, surprise, a
+`@RunDiscovery` annotation) and you get get results of such discovery
+injected into a field in your test class. You can even set the container
+up so that it thinks it is connected to an RHQ server and you can
+provide your `ServerServices` implementation (i.e. the RHQ server facade
+interface) and there is a default implementation ready that uses Mockito
+to mock your serverside. There's still more, you can read all about the
+supported features and see some examples on
+http://wiki.rhq-project.org/display/RHQ/Arquillian+Integration+For+Agent+Plugins[this
+wiki page].
+
+Conclusion
+++++++++++
+
+While not a panacea for all problems the testing of RHQ plugins brings
+about, using Arquillian we were able to cut the setup needed to run a
+plugin in-container by 90% and we were able to introduce a number of
+convenience annotations using which you can get a variety of data
+injected into your unit tests. This is still just a beginning though,
+the next step is to start actually using this integration and come up
+with other useful annotation and/or helper methods/classes that will
+ease the working with and retrieving information from the plugin
+container as much as possible.

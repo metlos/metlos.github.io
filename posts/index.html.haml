@@ -1,0 +1,24 @@
+---
+layout: base
+---
+
+- if page.selected_tag
+  %h1
+    %i.fa.fa-tag
+    #{page.selected_tag}       
+
+-# page.posts is used in both case: tagged articles and paginated articles
+- for post in page.posts
+  .post
+    .header
+      %h3
+        %a{:href=>"#{site.base_url}#{post.url}"} #{post.title}
+      %p.author
+        posted on
+        %strong.date< #{post.date.strftime('%d %B %Y')}
+    %p.content
+      - first_paragraph = post.content.split('<p>')[1].split('</p>').first      
+      #{first_paragraph}
+%ul.pagination
+  #{site.pager.links(page.posts, 1)}
+.pagination-stop

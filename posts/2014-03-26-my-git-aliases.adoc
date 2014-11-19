@@ -1,0 +1,14 @@
+---
+:title: My git aliases
+:tags: [git]
+---
+
+Just a short note about the useful git aliases I've came up with during
+the course of my daily work with git and github.
+
+Although it's been done by different people several times, I also came up
+with some shortcuts to work with github's pull requests from the 
+commandline. I tend to use github's website only for commenting on the pull
+requests but I like to do the rest locally in my repository (including the
+merge of the pull request). Checkout this 
+https://gist.github.com/metlos/9368527[gist] where I keep my aliases.

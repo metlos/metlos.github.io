@@ -1,0 +1,94 @@
+---
+:title: Upgrading Resources In RHQ
+:tags: [rhq]
+---
+
+Humans make mistakes. That's because they learn and by making mistakes
+and experimenting they perfect their skills. Computers on the other hand
+only do as they are told. When a human interacts with the computer, she
+expects the computer to be human-like to the extent that it can recover
+or react to the mistakes she makes while learning the rules of
+interaction with it.
+
+In case of http://www.rhq-project.org[RHQ] one of the users is a plugin
+developer. An RHQ (agent) plugin is a "thing" that talks to some other
+software and can configure and monitor it. The other type of the RHQ
+user is the system administrator that uses RHQ and its plugins to manage
+their IT infrastructure. For the administrator, the plugin becomes part
+of the "computer". But the plugin is made by humans and humans make
+mistakes.
+
+One of the mistakes the plugin developer can make is to assign a wrong
+"resource key" during the discovery of resources. A resource key is
+something that uniquely identifies the particular "resource" the plugin
+can talk to. You can dive much deeper into the details of this
+http://rhq-project.org/display/RHQ/Writing+Custom+Plugins#WritingCustomPlugins-Identity[here]
+but in a nutshell, the resource key is extracted from the data the
+plugin can gather about a resource in such a way that if at some later
+point in time the plugin is told to rediscover the resources it can
+manage, the resource key will remain the same for the same resources.
+Usually, the resource key is a file-system location of some significant
+configuration file, an installation directory, a port a service is
+listening on, a CPU id, a mount point, etc. Whatever fits the need of
+the particular plugin.
+
+If the plugin developer realized she made a mistake in the way the
+resource key is generated and that it for example doesn't identify the
+resource in a completely unique way, the only thing she could do is to
+create a new version of the plugin with the fix and distribute it to her
+customers. Easy.
+
+But the consequences for the customers (i.e. the system administrators)
+were quite severe. Because the resource key algorithm changed, the
+resources that they already had in their inventories and that they
+managed, collected stats on, had alerts defined for, etc. suddenly
+became defunct and a new resource (or even more resources, with the new
+resource keys) appeared in their place. The administrator would then
+have to go and define their alerts, add the new resource(s) to the
+groups they defined for them, etc. all over again. Not to mention the
+fact the historical data would from now on be split between the "old"
+and "new" resource so if the admin wanted to retain the historical data
+they could not just delete the defunct resource. They'd have to keep it
+in their inventory in which the resource would forever stay in
+unavailable state showing red icons signifying a problem where there
+wouldn't be any (well, the problem was on the plugin developer side, but
+the admin would suffer for it).
+
+*But all that changed.* Yesterday, I merged in a new feature that
+enables the plugin developers to fix their past mistakes in a way that
+the system admins wouldn't be punished for.
+
+I called the process "resource upgrade" because it enables the plugin
+developers to change the data of the existing resources to "upgrade"
+them so that they conform to the latest version of the plugin code. For
+now the feature is quite rudimentary and only enables to upgrade the
+resource key, resource name and description. Obviously, the other big
+candidates for upgrade would be the plugin configuration (aka connection
+settings) and resource configuration. When we were thinking about this
+though we realized that not only would implmenenting the configuration
+upgrades be quite complex because we would basically have to break the
+fundamental principle of RHQ configuration which is that the RHQ server
+is the authoritative source of configuration data, but we couldn't find
+a plugin that would benefit from such capability.
+
+If you happen to have a custom RHQ plugin for your piece of software and
+say to yourself, damn, why oh why didn't they think about my use case,
+I'd love to be able to upgrade the configuration of existing resources,
+please leave a comment here. I'd love to hear about your needs so that
+we can think about supporting them in the future.
+
+When I said that the resource upgrade supports upgrading the resource
+name and description I partially lied though. The actual update of these
+is guarded by a server configuration setting because both resource name
+and description can be updated by the users and we wouldn't want to
+overwrite their updates without consent. For now there is even no way to
+enable that setting in the UI even though it'd be trivial to add. The
+problem with this is that for this feature to be useful to our current
+community and customers, we'd have to update all the plugins with code
+that would implement it which becomes a substantial amount of work with
+our 30+ plugins at the moment. But if you feel like you absolutely need
+this, contact our team. Anything is possible when there's enough backing
+;)
+
+You can read more about the technicalities of the implementation on our
+http://rhq-project.org/display/RHQ/Design+-+Resource+Upgrade[wiki].

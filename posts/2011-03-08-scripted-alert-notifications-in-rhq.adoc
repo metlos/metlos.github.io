@@ -1,0 +1,116 @@
+---
+:title: Scripted alert notifications in RHQ
+:tags: [rhq]
+---
+
+Since RHQ3, we support "alert sender" server plugins. Basically an alert
+sender is a piece of code that can generate some sort of response to the
+firing of an alert.
+
+There's a whole bunch of these in RHQ, including:
+
+* emails - sending emails to the configured addresses that an alert
+occured within the system
+* roles, users - notifying members of given roles or users about the
+alert
+* mobicents - sends SMS messages about the alert
+* log4j - writes a log entry when the alert fires
+* operation - executes an operation on some resource in the RHQ
+inventory when the alert fires
+* ...
+
+This blog post is about a new such alert sender that is capable of
+executing a CLI script.
+
+RHQ has a command-line client, the CLI, which is able to remotely
+connect to an RHQ server and execute commands on it. Basically the CLI
+enables the users to use the Remote API of the RHQ server in a
+Javascript environment.
+
+Now with the CLI scripts as the alert notifications you have the same
+power at your fingertips as you have in the CLI directly on the server.
+The scripts can do literally anything you can do in your CLI scripts.
+
+As an example, consider the following script:
+
+```java
+/*
+ * This script is supposed to be notifying about alerts on a web application.
+ * It will save some stats into a file on the RHQ server and then invoke a bash
+ * script if it finds it necessary.
+ */
+
+//get the proxied resource so that I can use the more convenient syntax than 
+//just the raw calls to the remote APIs
+//notice the predefined variable 'alert' that contains the object of the alert that is being 
+//fired
+var myResource = ProxyFactory.getResource(alert.alertDefinition.resource.id)
+
+//find the metric (aka measurement) for the "Sessions created per Minute"
+//this will give us the picture about the load on the web app
+var definitionCriteria = new MeasurementDefinitionCriteria()
+definitionCriteria.addFilterDisplayName('Sessions created per Minute')
+definitionCriteria.addFilterResourceTypeId(myResource.resourceType.id)
+
+var definitions = MeasumentDefinitionManager.findMeasurementDefinitionsByCriteria(definitionCriteria)
+
+//only continue if we have the definition
+if (definitions.empty) {
+   throw new java.lang.Exception("Could not get 'Sessions created per Minute' metric on resource " 
+      + myResource.id)
+}
+   
+var definition = definitions.get(0)
+
+//start date is now - 8hrs
+var startDate = new Date() - 8 * 3600 * 1000 //8 hrs in milliseconds
+var endDate = new Date()
+
+//get the data of the metric for the last 8 hours, chunked up to 60 intervals
+var data = MeasurementDataManager.findDataForResource(myResource.id, [ definition.id ], startDate, endDate, 60)
+
+exporter.setTarget('csv', '/the/output/folder/for/my/metrics/' + endDate + '.csv')
+
+//the data contains an entry for each of the definitions we asked the data for...
+exporter.write(data.get(0))
+
+//ok, we've exported the stats
+//now we want to make sure that our database is still running
+
+//let's suppose the resource id of the datasource is "well-known"
+//we could get it using criteria APIs as well, of course
+var dataSource = ProxyFactory.getResource(10411)
+
+//now check if the datasource's underlying connection is up
+//There is an operation defined on a "Data Source" resource type, which we can call
+//as a simple javascript method on the resource proxy
+connectionTest = dataSource.testConnection()
+
+//the result will be null, if the operation couldn't be invoked at all or if it took
+//too long. Otherwise it will be a configuration object representing the operation
+//results as defined by the operation definition.
+//In this case, the result of an operation is a configuration object with a single
+//property called "result" which is true if the connection could be established and 
+//false otherwise
+if (connectionTest == null || connectionTest.get('result').booleanValue == false) {
+    //ok, this means we had problems connecting to the database
+    //let's suppose there's an executable bash script somewhere on the server that
+    //the admins use to restart the database
+    java.lang.Runtime.getRuntime().exec('/somewhere/on/the/server/restart-database.sh')
+}
+```
+
+In another words, it is quite powerful :)
+
+There is a design wiki page with documentation of the feature, if you're
+interested in reading more about it: +
+http://wiki.rhq-project.org/display/RHQ/Design+-+Serverside+scripts[http://wiki.rhq-project.org/display/RHQ/Design+-+Serverside+scripts]
+
+There's the brand new http://rhq-project.org/display/RHQ/Download[RHQ
+4.0.0.Beta1] out that contains this new feature. Go check it out!
+
+For the impatient, I recorded a short screencast of the new feature in
+action. http://vimeo.com/20791639
+
+It is best viewed in HD but for that you have to view it directly on
+vimeo.com. Just click the "HD" in the video.

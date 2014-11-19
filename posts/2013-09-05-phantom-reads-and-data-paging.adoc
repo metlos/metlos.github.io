@@ -1,0 +1,60 @@
+---
+:title: Phantom reads and data paging
+:tags: [rhq,database]
+---
+
+Paging through the results is easy, right?
+
+The client only needs to supply the number of rows to skip and the
+maximum number of rows it wants returned (aka the page number and the
+page size). The server then returns the data along with the information
+about the total number of results available. Et voila you have all the
+information you need. The number of rows to skip together with the page
+size give you the information about what page you're showing and the
+page size with the total number of rows gives you the total number of
+pages available. Nothing too difficult or complex.
+
+But there's a catch. On the server, one needs to perform (at least) two
+queries - one query to get the data for the requested page and the
+second query to fetch the total number of rows. Now most of the
+databases set the default transaction isolation level to READ_COMMITTED
+and for very good reasons. But this transaction isolation level allows
+for phantom reads, i.e. 2 queries in the same transaction might "see"
+different number of rows of data, if another transaction committed and
+added or deleted rows that would be returned by the queries. So, it may
+happen that you will: +
+
+* return "rows 5 to 10 out of 2 total",
+* say "there are no available results on the first page, while the total
+number of rows is 5",
+* etc.
+
+All that info acquired within one transaction.
+
+What can you do about such situations? The obvious solution is to just
+admit that these things can happen ;) Another option is to try and
+detect if such situation might have occured and re-try.
+
+I've come up with the following rules for consistency of the results:
+
+*`N`* is the actual number of elements on the page, *`P`* is the maximum
+number of elements on the page (i.e. the page size), *`I`* is the number
+of rows to skip and *`T`* is total number of results.
+
+* `T < I && N == 0`. This means we're trying to show a page that is past
+the total number of results. We therefore expect the collection to be
+empty.
+* `T - I > P && N == P`. If we are are not showing the last page, the
+number of elements in the collection should be equal to the page size.
+* `T - I <= P && N == T - I`. If showing the last page, the collection
+should have all the remaining elements in it.
+
+These are kind of obvious assumptions but phantom read can easily break
+them and therefore one should be checking them if one wants to be
+serious about returning meaningful results to the user.
+
+So while paging is simple in principle, there are a couple of
+interesting corner cases that one needs to handle if one reads data out
+of a dynamic data set. It took us a good couple of years in
+http://www.jboss.org/rhq[RHQ] to get to the bottom of this but hopefully
+now our paging is more robust than it was before.

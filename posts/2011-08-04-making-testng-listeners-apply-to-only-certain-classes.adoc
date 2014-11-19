@@ -1,0 +1,128 @@
+---
+:title: Making TestNG @Listeners apply to only certain classes
+:tags: [java,testng]
+---
+
+http://testng.org[TestNG] defines a `@Listeners` annotation that is
+analogous to the `listeners` element in the test suite configuration xml
+file. This annotation can be put on any class but is not applied only to
+that class, but uniformly on *all* the tests in the test suite (which is
+in line with the purpose of the original XML element but it certainly is
+confusing to see an annotation on a class that has much wider influence
+but that single class).
+
+On the other hand, I really like what the `@Listeners` annotation
+offers. It is a way to "favor composition over inheritance" - a famous
+recommendation of the GoF. It would be great, if there was a way of
+using the `@Listeners` annotation to specify "augmentations" of the
+tests in that precise test class so that I can implement the listeners
+in separation and I don't have to compose awkward class hierarchies to
+get the behaviour I want in my test class.
+
+Imagine a world where one could write a test like this:
+
+```java
+@ClassListeners(JMockTest.class, BytemanTest.class, 
+    RHQPluginContainerTest.class, DatabaseTest.class)
+public class MyTests {
+    
+     @Test
+     @BMRule(... my byteman rule definition ...)
+     @PluginContainerSetup(... RHQ plugin container setup ...)
+     @DatabaseState(url = "my-db-dump.xml.zip", dbVersion = "2.100")
+     public test() {
+         Mockery context = TestNG.getClassListenerAccess(JMockTest.class);
+         RHQPluginContainerAccess pc = TestNG.getClassListenerAccess(RHQPluginContainerTest.class);
+         PluginContainerConfiguration config = pc.createMockedConfiguration(context);
+         
+         context.checking( ... my expectations ... );
+
+         Connection dbConnection = TestNG.getClassListenerAccess(DatabaseTest.class)
+             .getJdbcConnection();
+
+         ... my test on the RHQ plugin container modified using the byteman rules ...
+     }
+}
+
+public @interface ClassListeners {
+    Class<? extends IClassListener<?>>[] value();
+}
+
+public interface IClassListener<T> extends ITestNGListener {
+
+      T getAccessObject(IInvokedMethod testMethod);
+}
+```
+
+To get near that ideal state with the current TestNG (well, we're using
+5.13 in RHQ but as far as I checked there is nothing new in that regard
+in the latest TestNG) I had to do the following:
+
+1.  Restrict my listeners to only apply themselves if they are defined
+as a listener on the class of the current test method (i.e. basically
+break the contract of the annotation as it is right now).
+2.  Make the data that is available in the above example through the
+"access" objects accessible statically from a thread local storage. This
+is so that the test methodcan get to the data that is defined by the
+listener without having a reference to it.
+
+Here is a short synthetic example of how I did it:
+
+```java
+
+public class MyListener implements IInvokedMethodListener {
+    private static ThreadLocal<AccessObject> ACCESS = new ThreadLocal<AccessObject>();
+
+    public static AccessObject getAccess() {
+        return ACCESS.get();
+    }
+
+    public void beforeInvocation(IInvokedMethod method, ITestResult testResult) {
+        //checking that the test actually wants the augmentation I provide
+        if (!isListenerOnTestClass(method)) {
+            return;
+        }
+        ... do some setup stuff ...
+
+        //setup the access object so that the test can get to the data I defined.
+        ACCESS.set(new AccessObject());
+    }
+
+    public void afterInvocation(IInvokedMethod method, ITestResult testResult) {
+        if (!isListenerOnTestClass(method)) {
+            return;
+        }
+        ... tear down ...
+        ACCESS.set(null);
+    }
+
+    private boolean isListenerOnTestClass(IInvokedMethod method) {
+        Class cls = method.getTestMethod().getTestClass().getRealClass();
+
+        while (cls != null) {
+            Listeners annotation = cls.getAnnotation(Listeners.class);
+  
+            if (annotation != null) {
+                for(Class listener : annotation.value()) {
+                    if (this.getClass().equals(listener)) {
+                        return true;
+                    }
+                }
+            }
+
+            cls = cls.getSuperclass();
+        }
+
+        return false;
+     }
+}
+
+@Listeners(MyListener.class)
+public class MyTest {
+
+     public void test() {
+         AccessObject obj = MyListener.getAccess();
+         ... my test ...
+     }
+}
+```

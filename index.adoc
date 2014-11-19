@@ -1,0 +1,10 @@
+---
+:layout: base
+---
+
+== Welcome!
+
+This is a small site of an open source developer writing about the 
+open-source-developery stuff from time to time.
+
+You can check out my short link:about/[bio] or my link:posts/[blog].

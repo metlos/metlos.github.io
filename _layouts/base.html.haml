@@ -1,0 +1,52 @@
+!!!5
+%html
+  %head
+    %meta{ :charset=>'utf-8' }
+    %title Reinventing The Wheel
+    %meta{ :name=>'viewport', :content=>'width=device-width, initial-scale=1.0' }
+    :css
+      body {
+        padding-top: 60px;
+      }
+    %link{ :rel=>'stylesheet', :type=>'text/css', :href=>"#{site.base_url}/stylesheets/styles.css" }
+    %link{ :rel=>'stylesheet', :type=>'text/css', :href=>"#{site.base_url}/stylesheets/font-awesome/font-awesome.css" }
+    %script{ :type=>'text/javascript', :src=>"#{site.base_url}/javascripts/lightbox.min.js" }
+    /[if lt IE 9]
+      %script{ :type=>'text/javascript', :src=>'//html5shim.googlecode.com/svn/trunk/html5.js' }
+  %body
+    .navbar.navbar-inverse.navbar-fixed-top{ :role=>"navigation"}
+      .container
+        .navbar-header
+          %button.navbar-toggle{ :type=>"button", :"data-toggle"=>"collapse", :"data-target"=>".navbar-collapse" }
+            %span.sr-only Toggle navigation
+            %span.icon-bar
+            %span.icon-bar
+            %span.icon-bar
+          %a.nav.navbar-brand{ :href=>"#{site.base_url}", :title=>"Reinventing The Wheel"}
+            %i.fa.fa-refresh
+            %i.fa.fa-cog            
+        .collapse.navbar-collapse
+          %ul.nav.navbar-nav
+            %li
+              %a{ :href=>"#{site.base_url}/posts", :title=>"Blog"} 
+                %i.fa.fa-pencil
+            %li
+              %a{ :href=>"#{site.base_url}/about", :title=>"About"}
+                %i.fa.fa-info
+    .container{ :role => "main" }
+      ~ content
+      %hr
+      %footer
+        .links
+          %a{:href => "#{site.base_url}/blog.atom"}
+            %i.fa.fa-rss
+          %a{:href => "https://plus.google.com/+lukaskrejci/"}
+            %i.fa.fa-google-plus
+          %a{:href => "https://twitter.com/@krejcil"}
+            %i.fa.fa-twitter
+          %a{:href => "https://www.linkedin.com/profile/view?id=45241872"}
+            %i.fa.fa-linkedin
+        %p &copy; #{site.org} #{Date.today.year}
+
+    %script{ :type=>'text/javascript', :src=>'//cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js' }
+    %script{ :type=>'text/javascript', :src=>"#{site.base_url}/javascripts/bootstrap/collapse.js" }

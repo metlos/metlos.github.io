@@ -1,0 +1,118 @@
+---
+:title: Scripting News in RHQ 4.5.0
+:tags: [java,rhq,scripting,javascript,python]
+---
+
+https://docs.jboss.org/author/display/RHQ/Release+Notes+4.5.0[RHQ 4.5.0]
+(which we released today) contains a great deal of scripting
+enhancements that I think are worth talking about in more detail. In my
+eyes, the changes make the scripting in RHQ ready for serious use.
+
+CommonJS support
+^^^^^^^^^^^^^^^^
+
+This, I think, is huge. In the previous versions of RHQ, the only way of
+reusing functionality from another script was to use the `exec -f`
+command in the interactive CLI shell (in another words, this was NOT
+available in the batch mode, which is how majority of people are using
+the CLI). So if you needed to implement something bigger and needed to
+split your code in several files (as any sane person would do), you only
+had 1 option - before executing the "script", you needed to concatenate
+all the scripts together.
+
+This sucked big time and we knew it ;) But we didn't want to just add
+functionality to "include files" - that would be too easy ;) At the same
+time it wouldn't solve the problem, really. The problem with just
+"including" the files into the current "scope" of the script is that
+this would mean that each and every variable or function in those files
+would have to be uniquely named because javascript lacks any sort of
+namespace/package resolution. Fortunately, the
+http://commonjs.org[CommonJS] spec solves this problem.
+
+Here's how you use a module. Notice that you assign the module to a
+variable and that's how you prevent the "pollution" of your scope. The
+loaded module can have methods and variables with the same name as your
+script and they won't influence each other:
+
+```javascript
+var myfuncs = require("modules:/myfuncs");
+myfuncs.helloworld(); 
+```
+
+You may wonder what that `"modules:/myfuncs"` identifier means. It is an
+URI that the underlying library uses to locate the script to load. This
+"sourcing" mechanism is pluggable and I will talk about it more in the
+following chapter. To see some examples of the modules, you can look at
+the
+http://git.fedorahosted.org/cgit/rhq/rhq.git/tree/modules/enterprise/remoting/cli/src/main/samples/modules[`samples/modules`]
+directory of your CLI deployment and you can also read some
+documentation about this on
+https://docs.jboss.org/author/display/RHQ/Script+Modularity+-+Javascript[our
+wiki].
+
+Locating the scripts
+^^^^^^^^^^^^^^^^^^^^
+
+With the ability to load the scripts there comes the problem of locating
+them. For the standalone CLI, the obvious location for them is the
+filesystem, but what about alert notification scripts on the RHQ server?
+These scripts are stored in RHQ repositories which don't have a
+filesystem location. The solution is not to tie the scripts to the
+filesystem but have a generic way of locating them using URIs and a
+pluggable way of resolving those URIs and loading the scripts from
+various locations. This means that you can for example load the script
+from an RHQ repository in your standalone CLI installation, or to define
+1 central location for your local CLI scripts and use the "modules" URIs
+to refer to them. Or you can easily implement your own "source provider"
+and for example load the scripts from your internal git repo or ftp or
+whatnot. RHQ comes with a small set of predefined source providers,
+documented
+https://docs.jboss.org/author/display/RHQ/Script+Sources[here].
+
+With this ability at hand, you can make an RHQ repository a central
+place for your scripts that you will then be able to use universally -
+both in the standalone CLI installations and also in the alert
+notification scripts.
+
+Python
+^^^^^^
+
+In previous versions, our scripting was tied to Javascript. Thanks to
+quite a bit of refactoring, the RHQ scripting integration is now
+language independent and language support is pluggable (see my previous
+http://metlos.wordpress.com/2012/07/12/rhq-speaks-python/[post] where I
+detail how this was done in case of Python).
+
+What this all means is that you can now write your CLI scripts in Python
+and still use the same API as you were able to use before from
+Javascript only. I.e. you will find the `ResourceManager`,
+`AlertManager` and all the other predefined variables that define the
+RHQ API available in Python, too. The only thing that this initial
+implementation doesn't support is code-completion in the interactive CLI
+shell.
+
+Last but not least, the ability load the scripts from various locations
+is available in Python, too, using an automatically installed
+http://www.python.org/dev/peps/pep-0302/[path_hook]. You can read about
+how to use it on our
+https://docs.jboss.org/author/display/RHQ/Script+Modularity+-+Python[wiki].
+This also means that you can now write your alert notification scripts
+in Python, too.
+
+When running an alert notification script (i.e. an alert notification of
+the type "CLI Script"), the language of the script is determined from
+the script file extension - ".py" for python and ".js" for javascript.
+When you start the CLI shell, you pass your language of choice using the
+`--language` commandline parameter - "javascript" or "python" are the
+obvious possible values for it.
+
+Conclusion
+^^^^^^^^^^
+
+In my opinion, these changes are great and will allow our users to
+really start building useful tools using our scripting support. If you
+feel like you've come up with a script module you would like to share
+with the RHQ community, why don't you just send a pull request to our
+github https://github.com/rhq-project/samples[repo] with sample scripts?
+
+

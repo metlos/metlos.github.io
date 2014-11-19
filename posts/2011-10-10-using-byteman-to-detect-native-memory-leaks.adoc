@@ -1,0 +1,69 @@
+---
+:title: Using Byteman to detect native memory leaks
+:tags: [java,rhq,byteman]
+---
+
+In http://rhq-project.org[RHQ] we use the http://augeas.net[Augeas]
+library to do the configuration file parsing and updates for us in some
+of the plugins. Augeas in itself is pretty cool and the language for
+describing the structure of arbitrary configuration files and howto
+update them is pretty powerful. The only downside to using Augeas is
+that it is a C library and we therefore have to bind with it and use it
+more carefully so that we don't leak its native resources that aren't
+under control of JVM's garbage collector.
+
+It all boils down to just calling the `close()` method on the Augeas
+instance whenever we're done with it.
+
+As simple as it may seem, we still managed to mess it up and found out
+that there were some memory leaks that caused the RHQ agent to slowly
+(or not so slowly depending on its configuration) grow its memory usage
+which JVM's maximum heap size couldn't guard.
+
+The source code of the apache plugin isn't the simplest and there are
+many places that invoke augeas which interact in various ways so
+debugging this all isn't the simplest task. Even harder, we thought,
+would be to come up with some unit tests that would make sure that we
+don't leak augeas references.
+
+But then a crazy idea entered my mind. I knew
+http://www.jboss.org/byteman[Byteman] was a tool for bytecode
+manipulation. My idea was to somehow use it in our tests to do reference
+counting (by instrumenting the Augeas `init()` and `close()` calls).
+Turns out it is *very* easy to do that with Byteman and I was able to
+achieve even more than I hoped for.
+
+Byteman integrates quite nicely with TestNG that we use for our unit
+tests and so in a couple of steps I was able to implement a reference
+counter that not only was able to give me a difference between number of
+augeas instances creates vs. closed *BUT* it would also give me the
+stacktraces to the code that created a reference that wasn't `close()`'d
+afterwards. That I think is absolutely cool.
+
+The rules I added to my tests are quite simple:
+
+```java
+@BMRules(
+    rules = {
+        @BMRule(name = "increment reference count on Augeas init", targetClass = "net.augeas.Augeas",
+            targetMethod = "(String, String, int)",
+            helper = "org.rhq.plugins.apache.augeas.CreateAndCloseTracker",
+            action = "recordCreate($0, formatStack())"),
+        @BMRule(name = "decrement reference count on Augeas close", targetClass = "net.augeas.Augeas",
+            targetMethod = "close()", helper = "org.rhq.plugins.apache.augeas.CreateAndCloseTracker",
+            action = "recordClose($0, formatStack())") })
+```
+
+There indeed is nothing special about them. I tell Byteman to call my
+helper class's `recordCreate()` method whenever Augeas `init()` is
+called and to pass in the augeas instance (`$0` stands for `this` in the
+context of the instrumented method) and a nice callstack. The second
+rule merely calls `recordClose` on my helper with the instance of augeas
+that is being closed and again the callstack.
+
+You can check out the code for my helper class
+http://git.fedorahosted.org/git/?p=rhq/rhq.git;a=blob;f=modules/integration-tests/apache-plugin-test/src/test/java/org/rhq/plugins/apache/augeas/CreateAndCloseTracker.java;hb=HEAD[here].
+As you might have guessed, it's only a little more than a hashmap where
+the keys are the augeas instances and values are the callstacks. By
+processing this map after all the tests are run, I can quite easily
+figure out if *and where* we leak native memory.

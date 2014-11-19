@@ -1,0 +1,56 @@
+---
+:title: Planning configuration and templates export/import in RHQ
+:tags: [rhq]
+---
+
+We are currently starting to think about what would it take to implement
+exporting and importing various "configuration" elements including
+metric and alert templates, server configuration, dynagroup definitions,
+users & roles and possibly other "entities" between different RHQ
+installations.
+
+We were asked for this functionality a couple of times in the past and
+now has come the time when we'd like to take a stab at it. But for that
+to be truly useful, we need user feedback. If you have some strong
+opinions about what parts of the RHQ server's "configuration" (which in
+essence is everything but the inventory) should be exportable, please
+shout now. You can leave your feedback here or send a message to either
+of our mailing lists
+(https://fedorahosted.org/mailman/listinfo/rhq-devel[rhq-devel],
+https://fedorahosted.org/mailman/listinfo/rhq-users[rhq-users]) or even
+post a message to our http://community.jboss.org/en/jopr[forums].
+
+I've started a
+http://wiki.rhq-project.org/display/RHQ/Design+-+Configuration+synchronization[wiki
+page] about the subject if you want to know what our current thinking
+about all this is. Since this is in a very early stage of planning, just
+about everything is up to debate. To start off the discussion, I'd like
+to answer the following questions:
+
+1.  What parts of RHQ would you like to sync between RHQ servers?
+* server configuration
+* users
+* roles
+* metric templates
+* alert templates
+* content sources
+* repos
+* packages
+* dyna groups
+* plugins
+* configuration, connection settings of a resource
+* metric schedules of a resource
+* alert definitions of a resource
+2.  How granular should the export be?
+* all or nothing - i.e. "true" sync
+* per "subsystem" (i.e. all users&roles, all templates, content sources
+&repos & packages, ...)
+* pick and choose individual entities
+3.  How segmented should the export be?
+* lump different entity types together in one export file
+* export per "subsystem"
+4.  When should the import be run?
+* during RHQ server installation
+* any time
+
+If you want to shape the future of RHQ, now's the time! ;-)

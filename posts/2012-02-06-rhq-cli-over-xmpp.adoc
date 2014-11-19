@@ -1,0 +1,32 @@
+---
+:title: RHQ CLI over XMPP
+:tags: [java,rhq,xmpp,scripting]
+---
+
+I watched the great demo of the http://vimeo.com/35730049[XMPP server
+plugin] for RHQ from Rafael Chies. Rafael is using a custom DSL to query
+the RHQ server for information but I thought that that really shouldn't
+be necessary - it should be possible to use an ordinary CLI session
+behind this. Granted - the "query language" of our remote API is more
+complicated than the simple DSL Rafael is using but at the same time,
+the API we use in the CLI is much more feature rich and I wouldn't have
+to reimplement any of it if I was able to "blend" the CLI session with
+the XMPP chat.
+
+So I forked Rafale's code on https://github.com/metlos/rhq-xmpp[github]
+and went off to work. During the course of reimplementing Rafael's code
+I discovered 2 bugs in RHQ itself
+(https://bugzilla.redhat.com/show_bug.cgi?id=786106[BZ 786106] and
+https://bugzilla.redhat.com/show_bug.cgi?id=786194[BZ 786194]) which I
+fixed immediately (well, it took me a couple of hours to figure out what
+the hell was going on there ;) ). After that, it wasn't really that hard
+to integrate XMPP and the CLI's script engine and here's a short video
+to prove that it actually works :-) :
+
+[vimeo 36274198 w=751 h=352]
+
+http://vimeo.com/36274198[RHQ CLI over XMPP] on http://vimeo.com[Vimeo].
+
+For the interested, all the important code is included in
+https://github.com/metlos/rhq-xmpp/blob/master/src/main/java/org/rhq/enterprise/server/plugins/xmpp/receiver/XMPPReceiver.java[this
+class].

@@ -1,0 +1,102 @@
+@import "variables";
+@import "bootstrap";
+
+//override what's not possible using the variables
+.btn, .brand, .nav {
+    font-family : $font-family-sans-serif;
+}
+
+p {
+    text-align: justify;
+}
+
+.post-navigation {
+    display: table;
+    width: 100%;
+}
+
+.post-navigation .nav-link {
+    display: inline;
+}
+
+.post-navigation .previous {
+    text-align: left;
+    display: table-cell;
+}
+
+.post-navigation .next {
+    text-align: right;
+    display: table-cell;
+}
+
+.author {
+    font-style: italic;
+    margin-bottom: 0.67em;
+}
+
+.date {
+    display: inline;
+    font-weight: bold;
+}
+
+footer .links {
+  float: right;
+  display: inline;
+}
+
+footer .links a {
+  padding-left: 3px;
+}
+
+.tags {
+  margin-bottom: 0.67em;  
+}
+
+.tag-1 {
+  font-size: floor(($font-size-base * 1.4));
+}
+
+.tag-2 {
+  font-size: floor(($font-size-base * 1.8));
+}
+
+.tag-3 {
+  font-size: floor(($font-size-base * 2.2));
+}
+
+.tag-4 {
+  font-size: floor(($font-size-base * 2.6));
+}
+
+.tag-5 {
+  font-size: floor(($font-size-base * 3.0));
+}
+
+.tag-6 {
+  font-size: floor(($font-size-base * 3.4));
+}
+
+.tag-7 {
+  font-size: floor(($font-size-base * 3.8));
+}
+
+.tag-8 {
+  font-size: floor(($font-size-base * 4.2));
+}
+
+.tag-9 {
+  font-size: floor(($font-size-base * 4.6));
+}
+
+.tag-10 {
+  font-size: floor(($font-size-base * 5.0));
+}
+
+.pagination-stop {
+  clear: both;
+}
+
+.pagination {
+  float: right;
+  margin-bottom: 0;
+}

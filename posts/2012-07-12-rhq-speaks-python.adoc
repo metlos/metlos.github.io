@@ -1,0 +1,183 @@
+---
+:title: RHQ speaks Python
+:tags: [java,rhq,scripting,python]
+---
+
+In the past few weeks I was quite busy refactoring RHQ's CLI and
+scripting integration. Funnily enough it all started because we wanted
+to add the support for CommonJS modules to our javascript interface.
+During the course of the refactoring, I found out that I'm actually
+heading in the direction of completely separating the "language" support
+from the rest of the RHQ, which then only speaks to it through the
+Java's standard scripting APIs which are language independent.
+
+RHQ's CLI was originally only implemented for and tightly coupled with
+javascript for which the JRE has support by default. The problem we had
+was that the version of Rhino (i.e. the Javascript implementation Java
+uses) that is bundled with the JRE does not support CommonJS modules
+while the newer versions do.
+
+But this is about Python, right? So once I saw that we have a nice
+little API that one can implement to add support for another language, I
+thought why not try bringing another language to RHQ? The obvious choice
+was Python - the most popular language among the ones that can integrate
+with Java. So I grabbed Jython and started looking if would be possible
+to do with it everything we needed to do to implement our API. And it
+turned out it was - a mere 200 lines of Java code and RHQ can speak
+Python :)
+
+Let's look at how the API we needed implement looked like:
+
+```java
+public class PythonScriptEngineProvider implements ScriptEngineProvider {
+
+    @Override
+    public String getSupportedLanguage() {
+        return "python";
+    }
+
+    @Override
+    public ScriptEngineInitializer getInitializer() {
+        return new PythonScriptEngineInitializer();
+    }
+
+    @Override
+    public CodeCompletion getCodeCompletion() {
+        // XXX are we gonna support code completion for multiple langs in the CLI?
+        return null;
+    }
+}
+```
+
+Now that's quite trivial, isn't it? :) Of course, this is the basic
+interface which just delegates the real work to other classes. So let's
+look at the `ScriptEngineInitializer` - the class that really does the
+all the important work:
+
+```java
+public class PythonScriptEngineInitializer implements ScriptEngineInitializer {
+
+    private static final Log LOG = LogFactory.getLog(PythonScriptEngineInitializer.class);
+
+    static {
+        Properties props = new Properties();
+        props.put("python.packages.paths", "java.class.path,sun.boot.class.path");
+        props.put("python.packages.directories", "java.ext.dirs");
+        props.put("python.cachedir.skip", false);
+        PythonInterpreter.initialize(System.getProperties(), props, null);
+    }
+
+    private ScriptEngineManager engineManager = new ScriptEngineManager();
+
+    @Override
+    public ScriptEngine instantiate(Set packages, PermissionCollection permissions) throws ScriptException {
+
+        ScriptEngine eng = engineManager.getEngineByName("python");
+
+        //XXX this might not work perfectly in jython
+        //but we can't make it work perfectly either, so let's just
+        //keep our fingers crossed..
+        //http://www.jython.org/jythonbook/en/1.0/ModulesPackages.html#from-import-statements
+        for (String pkg : packages) {
+            try {
+                eng.eval("from " + pkg + " import *\n");
+            } catch (ScriptException e) {
+                //well, let's just keep things going, this is not fatal...
+                LOG.info("Python script engine could not pre-import members of package '" + pkg + "'.");
+            }
+        }
+
+        //fingers crossed we can secure jython like this
+        return permissions == null ? eng : new SandboxedScriptEngine(eng, permissions);
+    }
+
+    @Override
+    public void installScriptSourceProvider(ScriptEngine scriptEngine, ScriptSourceProvider provider) {
+        PySystemState sys = Py.getSystemState();
+        if (sys != null) {
+            sys.path_hooks.append(new PythonSourceProvider(provider));
+        }
+    }
+
+    @Override
+    public Set generateIndirectionMethods(String boundObjectName, Set overloadedMethods) {
+        if (overloadedMethods == null || overloadedMethods.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        Set argCnts = new HashSet();
+        for (Method m : overloadedMethods) {
+            argCnts.add(m.getParameterTypes().length);
+        }
+
+        String methodName = overloadedMethods.iterator().next().getName();
+        StringBuilder functionBody = new StringBuilder();
+
+        functionBody.append("def ").append(methodName).append("(*args, **kwargs):\n");
+        functionBody.append("\t").append("if len(kwargs) > 0:\n");
+        functionBody.append("\t\t").append("raise ValueError(\"Named arguments not supported for Java methods\")\n");
+        functionBody.append("\t").append("argCnt = len(args)\n");
+
+        for (Integer argCnt : argCnts) {
+            functionBody.append("\t").append("if argCnt == ").append(argCnt).append(":\n");
+            functionBody.append("\t\treturn ").append(boundObjectName).append(".").append(methodName).append("(");
+            int last = argCnt - 1;
+            for (int i = 0; i < argCnt; ++i) {
+                functionBody.append("args[").append(i).append("]");
+                if (i < last) {
+                    functionBody.append(", ");
+                }
+            }
+            functionBody.append(")\n");
+        }
+
+        return Collections.singleton(functionBody.toString());
+    }
+
+    @Override
+    public String extractUserFriendlyErrorMessage(ScriptException e) {
+        return e.getMessage();
+    }
+}
+```
+
+The most important task of the initializer is to instantiate the script
+engine of the language it supports and intialize it - pre-import java
+packages of RHQ's classes and apply java security to the script engine.
+The other tasks it has are to install a "script source provider" to the
+engine (the script source provider is a class that is able to locate a
+script "somewhere"), to extract a user-friendly error message from the
+script exception and finally to generate "indirection methods" -
+basically define top level functions that delegate to a method on
+certain object. All these methods are there so that RHQ can correctly
+set up the bindings that the scripts then can use to access and
+manipulate RHQ data.
+
+I won't be listing the source of the class that integrates the source
+providers with Python, you can take a look at it
+http://git.fedorahosted.org/git/?p=rhq/rhq.git;a=blob;f=modules/enterprise/scripting/python/src/main/java/org/rhq/scripting/python/PythonSourceProvider.java;hb=HEAD[here].
+But I'll show you how it is possible in your local CLI session to import
+a python script stored in the RHQ server in some repository:
+
+```python
+import sys
+
+sys.path.append("__rhq__:rhq://repositories/my_repo/")
+
+import my_script as foo
+
+...
+```
+
+RHQ has a `path_hook` in Python that looks for paths prefixed with
+`__rhq__:`. After that you can specify the root URL that the RHQ's
+source provider understand. The import statement then looks for a module
+under that URL. In the example above, you will import the script called
+`my_script.py` that is stored on the RHQ server in the repository called
+`my_repo`.
+
+So that's it. You can see that adding support for another scripting
+language is not that hard. What language will you add? ;-) You can read
+more about the language support on the
+https://docs.jboss.org/author/display/RHQ/Multiple+languages+in+CLI[RHQ
+wiki].

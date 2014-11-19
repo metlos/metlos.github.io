@@ -1,0 +1,67 @@
+---
+:title: Securing Rhino in Java6
+:tags: [java,rhq,rhino,scripting]
+---
+
+In http://rhq-project.org[RHQ] we let the users provide scripts that can
+be run when an alert fires. This is great for automation because the
+script can do anything the users can do with our remote API. But the
+users of course can write a script like this:
+
+```java
+java.lang.System.exit(1); 
+```
+
+This would shut down the whole RHQ server, which, of course, is not so
+nice.
+
+The solution to this problem is to run the Rhino script engine in a
+custom access control context. One has to define the set of Java
+permissions that the scripts are allowed and specifically *NOT* include
+the "exitVM" RuntimePermission in the set. After that a custom
+http://docs.oracle.com/javase/6/docs/api/java/security/AccessControlContext.html[`AccessControlContext`]
+can be created with the set of permissions.
+
+But now comes the fun part. In Java6 update 28, the Rhino script engine
+actually *changed* the way it can be secured due to a found security
+vulnerability. So in a Java6 update 27 patched with
+http://www.oracle.com/technetwork/topics/security/javacpuoct2011-443431.html[this]
+patch or in Java6 update 28 and later, the Rhino runs the scripts with
+the access control context that it was created with itself. In the
+unpatched Java6 u27 and earlier the scripts were run with an access
+control context active at the time when the script evaluated.
+
+So what does that mean for you, my dear readers, that want to reliably
+secure your application and allow custom scripts to be executed in it at
+the same time? Well, of course, you need to secure your script engine
+twice (or refuse to run on anything older than Java6 u28).
+
+Let me show you how it is done in RHQ:
+
+```java
+ProtectionDomain scriptDomain = new ProtectionDomain(src, permissions);
+AccessControlContext ctx = new AccessControlContext(new ProtectionDomain[] { scriptDomain });
+try { 
+    return AccessController.doPrivileged(new PrivilegedExceptionAction<ScriptEngine>() { 
+        @Override 
+        public ScriptEngine run() throws Exception { 
+            ScriptEngineManager engineManager = new ScriptEngineManager(); 
+            ScriptEngine engine = engineManager.getEngineByName("JavaScript");
+            return new SandboxedScriptEngine(engine, permissions); 
+        } 
+    }, ctx);
+} catch (PrivilegedActionException e) {
+    ...
+}
+```
+
+What do you actually see in the code above? The privileged block is
+there to ensure that the script engine is created using the desired
+access control context (so that it can use it in Java6 u28). The script
+engine itself (created by the call to `getEngineByName`) is then wrapped
+in a
+http://git.fedorahosted.org/git/?p=rhq/rhq.git;a=blob;f=modules/enterprise/binding/src/main/java/org/rhq/bindings/SandboxedScriptEngine.java;hb=HEAD[`SandboxedScriptEngine`]
+which is a special decorator that wraps all the `eval()` invocations in
+a access control context with the specified permissions. That will
+ensure that the access control context is enforced in the unpatched
+Java6 u27 and earlier.

@@ -1,0 +1,28 @@
+---
+layout: base
+---
+
+.post-navigation
+    .previous
+        - if page.previous_post
+            .label
+                &laquo;
+            .nav-link
+                %a{:href => page.previous_post.url}= page.previous_post.title
+    .next
+        - if page.next_post
+            .nav-link
+                %a{:href => page.next_post.url}= page.next_post.title
+            .label
+                &raquo;
+%h1.title
+    #{page.title}
+.author
+    posted on
+    %span.date
+        = page.date.strftime('%d %b %Y')
+.tags
+    - page.tags.each do |tag|
+        %a.label.label-info{:href=>"#{site.base_url}#{tag.primary_page.url}"} #{tag}
+~ content
+= page.disqus_comments                        

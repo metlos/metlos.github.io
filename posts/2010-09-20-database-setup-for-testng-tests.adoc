@@ -1,0 +1,134 @@
+---
+:title: Database setup for TestNG tests
+:tags: [java,rhq]
+---
+
+In my
+http://metlos.wordpress.com/2010/09/15/how-to-export-data-from-a-db-using-jpa-model/[previous
+post] I talked about the approach I took to export data from a database
+using a JPA model. I also mentioned that that was a part of a larger
+effort to support performance testing that we are currently implementing
+for http://www.rhq-project.org[RHQ]. This post is a follow-up on that
+theme. This time we're going to take a look at how to use the exported
+data in http://testng.org[TestNG] based tests.
+
+The problem at hand is basically restoring the database to the exact
+state as it was when the data for the test was exported. This gets
+non-trivial in an evolving project like RHQ where we constantly change
+the DB schema to either add new features or to do performance
+enhancements. Before each test, we therefore need to do the following:
+
+1.  Recreate the database to the minimum supported version.
+2.  Upgrade the database schema to the version from which the data for
+the test was exported from.
+3.  Import the test data.
+4.  Upgrade the schema (now with the correct data) to the latest
+database version.
+5.  Run the test.
+
+TestNG is all about annotations so all this should ideally happen
+transparently to the test just by annotating the methods somehow. As far
+as I know there is no easy way to add a new custom annotation to TestNG
+core, but fortunately TestNG 5.12 added support for
+http://testng.org/javadocs/index.html?org/testng/annotations/Listeners.html[`@Listeners`]
+annotation which can be used to add any TestNG defined listener to the
+test. By implementing
+http://testng.org/javadocs/index.html?org/testng/IInvokedMethodListener.html[`IInvokedMethodListener`],
+we can check for presence of our new annotations on the tests and thus
+effectively implement a new TestNG "managed" annotation.
+
+With `@Listeners` and `IInvokedMethodListener`, the implementation is
+quite easy. We can define a simple annotation that will provide
+configuration for restoring the database state to be used on the test
+methods and implement the setup in our method listener.
+
+Let's take a look at the actual database state annotation copied from
+our code base:
+
+```java
+/**
+ * An annotation to associate a test method with a required state of the database.
+ * 
+ * @author Lukas Krejci
+ */
+@Retention(value = RetentionPolicy.RUNTIME)
+@Target(value = { ElementType.METHOD })
+public @interface DatabaseState {
+
+    /**
+     * The location of the database state export file.
+     */
+    String url();
+
+    /**
+     * The version of the RHQ database the export file is generated from.
+     * Before the data from the export file are imported into the database, the database
+     * is freshly created and upgraded to this version. After that, the export file
+     * is imported to it and the database is then upgraded to the latest version.
+     */
+    String dbVersion();
+    
+    /**
+     * Where is the export file accessible from (defaults to {@link DatabaseStateStorage#CLASSLOADER}).
+     */
+    DatabaseStateStorage storage() default DatabaseStateStorage.CLASSLOADER;
+    
+    /**
+     * The format of the export file (defaults to zipped xml).
+     */
+    FileFormat format() default FileFormat.ZIPPED_XML;
+    
+    /**
+     * The name of the method to provide a JDBC connection object.
+     * If the method is not specified, the value of the {@link JdbcConnectionProviderMethod} annotation
+     * is used.
+     */
+    String connectionProviderMethod() default "";
+}
+```
+
+A test class that would use these would look something like this:
+
+```java
+@Listeners(DatabaseSetupInterceptor.class)
+public class MyDbTests {
+
+    @Test
+    @DatabaseState(url = "my-exported-data.xml.zip", dbVersion = "2.94")
+    public void test1() {
+        ...
+    }
+}
+```
+
+I think that most of that is pretty self-explanatory. The only thing
+that needs explained further is the `dbVersion` and how we are dealing
+with setting up and upgrading the database schema.
+
+In RHQ we have been using our home-grown
+http://git.fedorahosted.org/git/?p=rhq/rhq.git;a=tree;f=modules/core/dbutils[dbutils]
+that use one XML file to store the "current" database schema definitions
+and another XML file (db-upgrade.xml) to detail the individual upgrade
+steps that evolve the schema (each such step is considered a schema
+"version"). The first XML is used for clean installations and the other
+is used to upgrade a schema used in previous versions to the current
+one. The `dbVersion` therefore specifies the version from the
+`db-upgrade.xml`.
+
+And that's basically it. You can check the implementation of the
+http://git.fedorahosted.org/git/?p=rhq/rhq.git;a=blob;f=modules/helpers/perftest-support/src/main/java/org/rhq/helpers/perftest/support/testng/DatabaseSetupInterceptor.java;hb=perftest[DatabaseSetupInterceptor]
+which does exactly the points 1 to 4 mentioned above.
+
+As a final, slightly unrelated, note, we are currently thinking about
+migrating our own database setup/upgrade tool to
+http://liquibase.org[liquibase]. I think that the above approach should
+be easily transferable to it by changing the dbVersion attribute to the
+liquibase's changeset id/author/file combo but I'm no expert in
+liquibase. If you happen to know liquibase and think otherwise, please
+leave a comment here and we'll get in touch ;)
+
+As with the export tool described in the previous post, I tried to
+implement this in a way that wouldn't be tied to RHQ so this could
+potentially be used in other projects (well, with this time, you'd
+either have to adopt our dbutils or liquibase, but I think even this
+could be made configurable).

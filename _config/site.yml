@@ -1,0 +1,40 @@
+name: Reinventing the wheel
+title: Reinventing the wheel
+org: Lukáš Krejčí
+base_url: 'http://lukas.krejci.pw'
+
+asciidoctor:
+  :safe: safe
+  :attributes:
+    base_url: 'http://lukas.krejci.pw'
+    idprefix: ''
+    idseparator: '-'
+    sectanchors: ''
+    icons: font
+    source-highlighter: coderay
+    coderay-css: style
+
+disqus: 'lukaskrejcipw'
+disqus_generate_id: true
+
+scss:
+  :line_numbers: false
+  :style: :expanded
+  
+profiles:
+  dev:
+    base_url: "http://localhost:4242"
+    asciidoctor:
+      :attributes:
+         base_url: "http://localhost:4242"
+    disqus_developer: true
+  production:
+    base_url: 'http://lukas.krejci.pw'
+    asciidoctor:
+      :attributes:
+         base_url: 'http://lukas.krejci.pw'
+    scss:
+      :style: :compressed
+    deploy:
+      host: github_pages
+      branch: master

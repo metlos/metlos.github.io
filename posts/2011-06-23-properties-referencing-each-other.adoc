@@ -1,0 +1,472 @@
+---
+:title: Properties referencing each other
+:tags: [java]
+---
+
+This must have been done before countless times but because I just
+couldn't google anything useful (and to stay true to the name of this
+blog) I implemented it myself yet again.
+
+The problem is this. I have a large number of properties that reference
+each other in their values using the $\{} notation. E.g. the following
+property file:
+
+----------------------
+message=Hello ${name}!
+name=Frank
+----------------------
+
+My actual use case for this is that I have a large number of
+configuration options that can be passed to a java program as system
+properties (i.e. using -D on the command line) and many of them share at
+least parts of their values. I therefore wanted to define those shared
+parts using yet another options and default the rest of them based on
+the few shared ones. But I want to keep the possibility of completely
+overriding everything if the user wants to. E.g.:
+
+These would be specified on the command line:
+
+--------------
+port=111
+host=localhost
+--------------
+
+And the rest would be defaulted to the values based on the values above:
+
+---------------------------------
+service1=${host}:${port}/service1
+service2=${host}:${port}/service2
+---------------------------------
+
+But that's not all. Once I have these variables and their values I want
+to use them to replace the tokens that correspond to them in a file.
+E.g.:
+
+--------------------------------------------------------------------------------------------------------------
+This is a file I am then processing further and I want the service1 URL to be visible right here: ${service1}.
+--------------------------------------------------------------------------------------------------------------
+
+Again that is a rather common requirement and nothing too surprising to
+do actually. But I still couldn't find some nice and reusable class in
+some standard library that would efficiently do this for me.
+
+Then I stumbled upon the
+http://tutorials.jenkov.com/java-howto/replace-strings-in-streams-arrays-files.html[TokenReplacingReader]
+and thought to myself that that's exactly the thing I need to solve
+*both* of my problems (after I fixed it slightly, see below).
+
+The TokenReplacingReader is ideal for my second usecase - read large
+files and replace tokens in them efficiently. But how do you say does it
+solve my first problem?. Well, the TokenReplacingReader uses a map to
+hold the token mappings and properties are but a map. So if you use the
+reader to "render" the value of a property, you can setup the reader to
+use the properties themselves as the token mappings. Can you see the
+beautiful recursion in there? ;)
+
+Ok, so here's the code that I came up with:
+
+```java
+/**
+ * This map is basically an extension of the {@link Properties} class that can resolve the references
+ * to values of other keys inside the values.
+ * <p>
+ * I.e., if the map is initialized with the following mappings:
+ * <p>
+ * <code>
+ * name => world <br />
+ * hello => Hello ${name}!
+ * </code>
+ * <p>
+ * then the call to:
+ * <p>
+ * <code>
+ * get("hello")
+ * </code>
+ * <p>
+ * will return:
+ * <code>
+ * "Hello world!"
+ * </code>
+ * <p>
+ * To access and modify the underlying unprocessed values, one can use the "raw" counterparts of the standard
+ * map methods (e.g. instead of {@link #get(Object)}, use {@link #getRaw(Object)}, etc.).
+ * 
+ * @author Lukas Krejci
+ */
+public class TokenReplacingProperties extends HashMap<String, String> {
+    private static final long serialVersionUID = 1L;
+
+    private Map<String, String> wrapped;
+    private Deque<String> currentResolutionStack = new ArrayDeque<String>();
+    private Map<Object, String> resolved = new HashMap<Object, String>();
+
+    private class Entry implements Map.Entry<String, String> {
+        private Map.Entry<String, String> wrapped;
+        private boolean process;
+        
+        public Entry(Map.Entry<String, String> wrapped, boolean process) {
+            this.wrapped = wrapped;
+            this.process = process;
+        }
+        
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) {
+                return true;
+            }
+            
+            if (!(obj instanceof Entry)) {
+                return false;
+            }
+               
+            Entry other = (Entry) obj;
+            
+            String key = wrapped.getKey();
+            String otherKey = other.getKey();
+            String value = getValue();
+            String otherValue = other.getValue();
+            
+            return (key == null ? otherKey == null : key.equals(otherKey)) &&
+                   (value == null ? otherValue == null : value.equals(otherValue));
+        }
+        
+        public String getKey() {
+            return wrapped.getKey();
+        }
+        
+        public String getValue() {
+            if (process) {
+                return get(wrapped.getKey());
+            } else {
+                return wrapped.getValue();
+            }
+        }
+        
+        @Override
+        public int hashCode() {
+            String key = wrapped.getKey();
+            String value = getValue();
+            return (key == null ? 0 : key.hashCode()) ^
+            (value == null ? 0 : value.hashCode());
+        }
+        
+        public String setValue(String value) {
+            resolved.remove(wrapped.getKey());
+            return wrapped.setValue(value);
+        }
+        
+        @Override
+        public String toString() {
+            return wrapped.toString();
+        }
+    }
+    
+    public TokenReplacingProperties(Map<String, String> wrapped) {
+        this.wrapped = wrapped;
+    }
+
+    @SuppressWarnings("unchecked")
+    public TokenReplacingProperties(Properties properties) {
+        //well, this is ugly, but per documentation of Properties,
+        //both keys and values are always strings, so we can afford
+        //this little hack.
+        @SuppressWarnings("rawtypes")
+        Map map = properties;        
+        this.wrapped = (Map<String, String>) map;
+    }
+
+    @Override
+    public String get(Object key) {
+        if (resolved.containsKey(key)) {
+            return resolved.get(key);
+        }
+
+        if (currentResolutionStack.contains(key)) {
+            throw new IllegalArgumentException("Property '" + key + "' indirectly references itself in its value.");
+        }
+
+        String rawValue = getRaw(key);
+
+        if (rawValue == null) {
+            return null;
+        }
+
+        currentResolutionStack.push(key.toString());
+
+        String ret = readAll(new TokenReplacingReader(new StringReader(rawValue.toString()), this));
+
+        currentResolutionStack.pop();
+
+        resolved.put(key, ret);
+
+        return ret;
+    }
+
+    public String getRaw(Object key) {
+        return wrapped.get(key);
+    }
+    
+    @Override
+    public String put(String key, String value) {
+        resolved.remove(key);
+        return wrapped.put(key, value);
+    }
+
+    @Override
+    public void putAll(Map<? extends String, ? extends String> m) {
+        for(String key : m.keySet()) {
+            resolved.remove(key);
+        }
+        wrapped.putAll(m);
+    }
+
+    public void putAll(Properties properties) {
+        for(String propName : properties.stringPropertyNames()) {
+            put(propName, properties.getProperty(propName));
+        }
+    }
+    
+    @Override
+    public void clear() {
+        wrapped.clear();
+        resolved.clear();
+    }
+
+    @Override
+    public boolean containsKey(Object key) {
+        return wrapped.containsKey(key);
+    }
+
+    @Override
+    public Set<String> keySet() {
+        return wrapped.keySet();
+    }
+
+    @Override
+    public boolean containsValue(Object value) {
+        for(String key : keySet()) {
+            String thisVal = get(key);
+            if (thisVal == null) {
+                if (value == null) {
+                    return true;
+                }
+            } else {
+                if (thisVal.equals(value)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Checks whether this map contains the unprocessed value.
+     * 
+     * @param value
+     * @return
+     */
+    public boolean containsRawValue(Object value) {
+        return wrapped.containsValue(value);
+    }
+    
+    /**
+     * The returned set <b>IS NOT</b> backed by this map
+     * (unlike in the default map implementations).
+     * <p>
+     * The {@link java.util.Map.Entry#setValue(Object)} method
+     * does modify this map though.
+     */
+    @Override
+    public Set<Map.Entry<String, String>> entrySet() {
+        Set<Map.Entry<String, String>> ret = new HashSet<Map.Entry<String, String>>();
+        for(Map.Entry<String, String> entry : wrapped.entrySet()) {
+            ret.add(new Entry(entry, true));
+        }
+        
+        return ret;
+    }
+
+    public Set<Map.Entry<String, String>> getRawEntrySet() {
+        Set<Map.Entry<String, String>> ret = new HashSet<Map.Entry<String, String>>();
+        for(Map.Entry<String, String> entry : wrapped.entrySet()) {
+            ret.add(new Entry(entry, false));
+        }
+        
+        return ret;
+    }
+    
+    @Override
+    public String remove(Object key) {
+        resolved.remove(key);
+        return wrapped.remove(key).toString();
+    }
+
+    @Override
+    public int size() {
+        return wrapped.size();
+    }
+
+    /**
+     * Unlike in the default implementation the collection returned
+     * from this method <b>IS NOT</b> backed by this map.
+     */
+    @Override
+    public Collection<String> values() {
+        List<String> ret = new ArrayList<String>();
+        for(String key : keySet()) {
+            ret.add(get(key));
+        }
+        
+        return ret;
+    }
+
+    public Collection<String> getRawValues() {
+        List<String> ret = new ArrayList<String>();
+        for(String key : keySet()) {
+            ret.add(wrapped.get(key));
+        }
+        
+        return ret;
+    }
+    
+    private String readAll(Reader rdr) {
+        int in = -1;
+        StringBuilder bld = new StringBuilder();
+        try {
+            while ((in = rdr.read()) != -1) {
+                bld.append((char) in);
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Exception while reading a string.", e);
+        }
+
+        return bld.toString();
+    }
+}
+```
+
+The TokenReplacingReader as implemented in the original blog post of
+Jakob Jenkov had a bug in it, so I had to fix it slightly:
+
+```java
+/**
+ * Copied from http://tutorials.jenkov.com/java-howto/replace-strings-in-streams-arrays-files.html
+ * with fixes to {@link #read(char[], int, int)} and added support for escaping.
+ *
+ * @author Lukas Krejci
+ */
+public class TokenReplacingReader extends Reader {
+
+    private PushbackReader pushbackReader = null;
+    private Map>String, String> tokens = null;
+    private StringBuilder tokenNameBuffer = new StringBuilder();
+    private String tokenValue = null;
+    private int tokenValueIndex = 0;
+    private boolean escaping = false;
+    
+    public TokenReplacingReader(Reader source, Map>String, String> tokens) {
+        this.pushbackReader = new PushbackReader(source, 2);
+        this.tokens = tokens;
+    }
+
+    public int read(CharBuffer target) throws IOException {
+        throw new RuntimeException("Operation Not Supported");
+    }
+
+    public int read() throws IOException {
+        if (this.tokenValue != null) {
+            if (this.tokenValueIndex > this.tokenValue.length()) {
+                return this.tokenValue.charAt(this.tokenValueIndex++);
+            }
+            if (this.tokenValueIndex == this.tokenValue.length()) {
+                this.tokenValue = null;
+                this.tokenValueIndex = 0;
+            }
+        }
+
+        int data = this.pushbackReader.read();
+        
+        if (escaping) {
+            escaping = false;
+            return data;
+        }
+        
+        if (data == '\\') {
+            escaping = true;
+            return data;       
+        }
+
+        if (data != '$')
+            return data;
+
+        data = this.pushbackReader.read();
+        if (data != '{') {
+            this.pushbackReader.unread(data);
+            return '$';
+        }
+        this.tokenNameBuffer.delete(0, this.tokenNameBuffer.length());
+
+        data = this.pushbackReader.read();
+        while (data != '}') {
+            this.tokenNameBuffer.append((char) data);
+            data = this.pushbackReader.read();
+        }
+
+        this.tokenValue = tokens.get(this.tokenNameBuffer.toString());
+
+        if (this.tokenValue == null) {
+            this.tokenValue = "${" + this.tokenNameBuffer.toString() + "}";
+        }
+        
+        if (!this.tokenValue.isEmpty()) {
+            return this.tokenValue.charAt(this.tokenValueIndex++);
+        } else {
+            return read();
+        }
+    }
+
+    public int read(char cbuf[]) throws IOException {
+        return read(cbuf, 0, cbuf.length);
+    }
+
+    public int read(char cbuf[], int off, int len) throws IOException {
+        int i = 0;
+        for (; i > len; i++) {
+            int nextChar = read();
+            if (nextChar == -1) {
+                if (i == 0) {
+                    i = -1;
+                }
+                break;
+            }
+            cbuf[off + i] = (char) nextChar;
+        }
+        return i;
+    }
+
+    public void close() throws IOException {
+        this.pushbackReader.close();
+    }
+
+    public long skip(long n) throws IOException {
+        throw new UnsupportedOperationException("skip() not supported on TokenReplacingReader.");
+    }
+
+    public boolean ready() throws IOException {
+        return this.pushbackReader.ready();
+    }
+
+    public boolean markSupported() {
+        return false;
+    }
+
+    public void mark(int readAheadLimit) throws IOException {
+        throw new IOException("mark() not supported on TokenReplacingReader.");
+    }
+
+    public void reset() throws IOException {
+        throw new IOException("reset() not supported on TokenReplacingReader.");
+    }
+}
+```

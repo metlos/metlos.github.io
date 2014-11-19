@@ -1,0 +1,52 @@
+---
+:title: Git - merging after a revert
+:tags: [git]
+---
+
+As it happened, I managed to merge a feature branch into our mainline
+that was not completely finished. After trying to fix it directly in the
+mainline I figured out that the best thing to do is to revert my changes
+in master and continue in a feature branch.
+
+Time has come to merge again.
+
+I tried the usual:
+
+------------------------------
+$ git checkout master 
+$ git merge my-feature-branch 
+------------------------------
+
+This of course resulted in a great number of conflicts and some files
+from the feature branch completely missing in the mainline because git
+saw the files deleted by my revert commit in the mainline, while they
+weren't touched in the feature branch. Git therefore quite reasonably
+assumed that, as the deletes in mainline were newer than the version in
+feature, keeping them deleted is the right thing to do. Other conflicts
+were caused by files having been deleted in the mainline but changed in
+the feature branch. Git doesn't know what to do with these (I wouldn't
+either if I were it ;) ).
+
+So that didn't go too well I thought. Feeling defeated I had to:
+
+-------------------
+$ git merge --abort
+-------------------
+
+After a bit of googling, the answer seemed to be "revert the revert and
+then merge". And yes, it worked! :)
+
+------------------------------------
+$git revert <my-revert-commit-hash> 
+$git merge my-feature-branch 
+------------------------------------
+
+By reverting the revert I effectively put the mainline into a state
+where it contained the files from the feature branch in a form that also
+exists on the feature branch (the commit hashes of course don't match
+but the 3-way merge has a much better starting point than with the files
+altogether missing). After that, the merge could figure out the changes
+I made in the feature branch and update the affected files. I was even
+lucky enough to get no conflicts - even though theoretically the
+conflicts could have occured both during the revert and during the
+merge.
