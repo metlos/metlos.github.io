@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Reinventing The Wheel</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <style>
+      body {
+        padding-top: 60px;
+      }
+    </style>
+    <link href="http://lukas.krejci.pw/stylesheets/styles.css" rel="stylesheet" type="text/css">
+    <link href="http://lukas.krejci.pw/stylesheets/font-awesome/font-awesome.css" rel="stylesheet" type="text/css">
+    <script src="http://lukas.krejci.pw/javascripts/lightbox.min.js" type="text/javascript"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shim.googlecode.com/svn/trunk/html5.js" type="text/javascript"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button class="navbar-toggle" data-target=".navbar-collapse" data-toggle="collapse" type="button">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="nav navbar-brand" href="http://lukas.krejci.pw" title="Reinventing The Wheel">
+            <i class="fa fa-refresh"></i>
+            <i class="fa fa-cog"></i>
+          </a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="http://lukas.krejci.pw/posts" title="Blog">
+                <i class="fa fa-pencil"></i>
+              </a>
+            </li>
+            <li>
+              <a href="http://lukas.krejci.pw/about" title="About">
+                <i class="fa fa-info"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container" role="main">
+      <div class="post-navigation">
+        <div class="previous">
+          <div class="label">
+            &laquo;
+          </div>
+          <div class="nav-link">
+            <a href="/posts/2011/06/23/properties-referencing-each-other/">Properties referencing each other</a>
+          </div>
+        </div>
+        <div class="next">
+          <div class="nav-link">
+            <a href="/posts/2011/10/10/using-byteman-to-detect-native-memory-leaks/">Using Byteman to detect native memory leaks</a>
+          </div>
+          <div class="label">
+            &raquo;
+          </div>
+        </div>
+      </div>
+      <h1 class="title">
+        Making TestNG @Listeners apply to only certain classes
+      </h1>
+      <div class="author">
+        posted on
+        <span class="date">
+          04 Aug 2011
+        </span>
+      </div>
+      <div class="tags">
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/java/">java</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/testng/">testng</a>
+      </div>
+      <div class="paragraph">
+      <p><a href="http://testng.org">TestNG</a> defines a <code>@Listeners</code> annotation that is
+      analogous to the <code>listeners</code> element in the test suite configuration xml
+      file. This annotation can be put on any class but is not applied only to
+      that class, but uniformly on <strong>all</strong> the tests in the test suite (which is
+      in line with the purpose of the original XML element but it certainly is
+      confusing to see an annotation on a class that has much wider influence
+      but that single class).</p>
+      </div>
+      <div class="paragraph">
+      <p>On the other hand, I really like what the <code>@Listeners</code> annotation
+      offers. It is a way to "favor composition over inheritance" - a famous
+      recommendation of the GoF. It would be great, if there was a way of
+      using the <code>@Listeners</code> annotation to specify "augmentations" of the
+      tests in that precise test class so that I can implement the listeners
+      in separation and I don&#8217;t have to compose awkward class hierarchies to
+      get the behaviour I want in my test class.</p>
+      </div>
+      <div class="paragraph">
+      <p>Imagine a world where one could write a test like this:</p>
+      </div>
+      <div class="listingblock">
+      <div class="content">
+      <pre class="CodeRay highlight"><code data-lang="java"><span style="color:#007">@ClassListeners</span>(JMockTest.class, BytemanTest.class,&#x000A;    RHQPluginContainerTest.class, DatabaseTest.class)&#x000A;<span style="color:#088;font-weight:bold">public</span> <span style="color:#339;font-weight:bold">class</span> <span style="color:#B06;font-weight:bold">MyTests</span> {&#x000A;&#x000A;     <span style="color:#007">@Test</span>&#x000A;     <span style="color:#007">@BMRule</span>(... my byteman rule definition ...)&#x000A;     <span style="color:#007">@PluginContainerSetup</span>(... RHQ plugin container setup ...)&#x000A;     <span style="color:#007">@DatabaseState</span>(url = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">my-db-dump.xml.zip</span><span style="color:#710">&quot;</span></span>, dbVersion = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">2.100</span><span style="color:#710">&quot;</span></span>)&#x000A;     <span style="color:#088;font-weight:bold">public</span> test() {&#x000A;         Mockery context = TestNG.getClassListenerAccess(JMockTest.class);&#x000A;         RHQPluginContainerAccess pc = TestNG.getClassListenerAccess(RHQPluginContainerTest.class);&#x000A;         PluginContainerConfiguration config = pc.createMockedConfiguration(context);&#x000A;&#x000A;         context.checking( ... my expectations ... );&#x000A;&#x000A;         <span style="color:#0a8;font-weight:bold">Connection</span> dbConnection = TestNG.getClassListenerAccess(DatabaseTest.class)&#x000A;             .getJdbcConnection();&#x000A;&#x000A;         ... my test on the RHQ plugin container modified using the byteman rules ...&#x000A;     }&#x000A;}&#x000A;&#x000A;<span style="color:#088;font-weight:bold">public</span> <span style="color:#007">@interface</span> ClassListeners {&#x000A;    <span style="color:#0a8;font-weight:bold">Class</span>&lt;? <span style="color:#088;font-weight:bold">extends</span> IClassListener&lt;?&gt;&gt;<span style="color:#339;font-weight:bold">[]</span> value();&#x000A;}&#x000A;&#x000A;<span style="color:#088;font-weight:bold">public</span> <span style="color:#339;font-weight:bold">interface</span> <span style="color:#B06;font-weight:bold">IClassListener</span>&lt;T&gt; <span style="color:#088;font-weight:bold">extends</span> ITestNGListener {&#x000A;&#x000A;      T getAccessObject(IInvokedMethod testMethod);&#x000A;}</code></pre>
+      </div>
+      </div>
+      <div class="paragraph">
+      <p>To get near that ideal state with the current TestNG (well, we&#8217;re using
+      5.13 in RHQ but as far as I checked there is nothing new in that regard
+      in the latest TestNG) I had to do the following:</p>
+      </div>
+      <div class="olist arabic">
+      <ol class="arabic">
+      <li>
+      <p>Restrict my listeners to only apply themselves if they are defined
+      as a listener on the class of the current test method (i.e. basically
+      break the contract of the annotation as it is right now).</p>
+      </li>
+      <li>
+      <p>Make the data that is available in the above example through the
+      "access" objects accessible statically from a thread local storage. This
+      is so that the test methodcan get to the data that is defined by the
+      listener without having a reference to it.</p>
+      </li>
+      </ol>
+      </div>
+      <div class="paragraph">
+      <p>Here is a short synthetic example of how I did it:</p>
+      </div>
+      <div class="listingblock">
+      <div class="content">
+      <pre class="CodeRay highlight"><code data-lang="java"><span style="color:#088;font-weight:bold">public</span> <span style="color:#339;font-weight:bold">class</span> <span style="color:#B06;font-weight:bold">MyListener</span> <span style="color:#088;font-weight:bold">implements</span> IInvokedMethodListener {&#x000A;    <span style="color:#088;font-weight:bold">private</span> <span style="color:#088;font-weight:bold">static</span> <span style="color:#0a8;font-weight:bold">ThreadLocal</span>&lt;AccessObject&gt; ACCESS = <span style="color:#080;font-weight:bold">new</span> <span style="color:#0a8;font-weight:bold">ThreadLocal</span>&lt;AccessObject&gt;();&#x000A;&#x000A;    <span style="color:#088;font-weight:bold">public</span> <span style="color:#088;font-weight:bold">static</span> AccessObject getAccess() {&#x000A;        <span style="color:#080;font-weight:bold">return</span> ACCESS.get();&#x000A;    }&#x000A;&#x000A;    <span style="color:#088;font-weight:bold">public</span> <span style="color:#339;font-weight:bold">void</span> beforeInvocation(IInvokedMethod method, ITestResult testResult) {&#x000A;        <span style="color:#777">//checking that the test actually wants the augmentation I provide</span>&#x000A;        <span style="color:#080;font-weight:bold">if</span> (!isListenerOnTestClass(method)) {&#x000A;            <span style="color:#080;font-weight:bold">return</span>;&#x000A;        }&#x000A;        ... do some setup stuff ...&#x000A;&#x000A;        <span style="color:#777">//setup the access object so that the test can get to the data I defined.</span>&#x000A;        ACCESS.set(<span style="color:#080;font-weight:bold">new</span> AccessObject());&#x000A;    }&#x000A;&#x000A;    <span style="color:#088;font-weight:bold">public</span> <span style="color:#339;font-weight:bold">void</span> afterInvocation(IInvokedMethod method, ITestResult testResult) {&#x000A;        <span style="color:#080;font-weight:bold">if</span> (!isListenerOnTestClass(method)) {&#x000A;            <span style="color:#080;font-weight:bold">return</span>;&#x000A;        }&#x000A;        ... tear down ...&#x000A;        ACCESS.set(<span style="color:#069">null</span>);&#x000A;    }&#x000A;&#x000A;    <span style="color:#088;font-weight:bold">private</span> <span style="color:#339;font-weight:bold">boolean</span> isListenerOnTestClass(IInvokedMethod method) {&#x000A;        <span style="color:#0a8;font-weight:bold">Class</span> cls = method.getTestMethod().getTestClass().getRealClass();&#x000A;&#x000A;        <span style="color:#080;font-weight:bold">while</span> (cls != <span style="color:#069">null</span>) {&#x000A;            Listeners annotation = cls.getAnnotation(Listeners.class);&#x000A;&#x000A;            <span style="color:#080;font-weight:bold">if</span> (annotation != <span style="color:#069">null</span>) {&#x000A;                <span style="color:#080;font-weight:bold">for</span>(<span style="color:#0a8;font-weight:bold">Class</span> listener : annotation.value()) {&#x000A;                    <span style="color:#080;font-weight:bold">if</span> (<span style="color:#950">this</span>.getClass().equals(listener)) {&#x000A;                        <span style="color:#080;font-weight:bold">return</span> <span style="color:#069">true</span>;&#x000A;                    }&#x000A;                }&#x000A;            }&#x000A;&#x000A;            cls = cls.getSuperclass();&#x000A;        }&#x000A;&#x000A;        <span style="color:#080;font-weight:bold">return</span> <span style="color:#069">false</span>;&#x000A;     }&#x000A;}&#x000A;&#x000A;<span style="color:#007">@Listeners</span>(MyListener.class)&#x000A;<span style="color:#088;font-weight:bold">public</span> <span style="color:#339;font-weight:bold">class</span> <span style="color:#B06;font-weight:bold">MyTest</span> {&#x000A;&#x000A;     <span style="color:#088;font-weight:bold">public</span> <span style="color:#339;font-weight:bold">void</span> test() {&#x000A;         AccessObject obj = MyListener.getAccess();&#x000A;         ... my test ...&#x000A;     }&#x000A;}</code></pre>
+      </div>
+      </div>
+      
+                  <div id="disqus_thread"></div>
+                  <script type="text/javascript">
+                  var disqus_shortname = 'lukaskrejcipw';
+                  var disqus_url = "http://lukas.krejci.pw/posts/2011/08/04/making-testng-listeners-apply-to-only-certain-classes/";
+                  var disqus_developer = null;
+                  var disqus_identifier = "186d4cefed1e73089d7f7f38ff85125172995724";
+                  (function() {
+                    var dsq = document.createElement("script"); dsq.type = "text/javascript"; dsq.async = true;
+                    dsq.src = "http://lukaskrejcipw.disqus.com/embed.js";
+                    (document.getElementsByTagName("head")[0] || document.getElementsByTagName("body")[0]).appendChild(dsq);
+                  })();
+                  </script>
+                  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript=lukaskrejcipw">comments powered by Disqus.</a></noscript>
+      <hr>
+      <footer>
+        <div class="links">
+          <a href="http://lukas.krejci.pw/blog.atom">
+            <i class="fa fa-rss"></i>
+          </a>
+          <a href="https://plus.google.com/+lukaskrejci/">
+            <i class="fa fa-google-plus"></i>
+          </a>
+          <a href="https://twitter.com/@krejcil">
+            <i class="fa fa-twitter"></i>
+          </a>
+          <a href="https://www.linkedin.com/profile/view?id=45241872">
+            <i class="fa fa-linkedin"></i>
+          </a>
+        </div>
+        <p>&copy; Lukáš Krejčí 2014</p>
+      </footer>
+    </div>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+    <script src="http://lukas.krejci.pw/javascripts/bootstrap/collapse.js" type="text/javascript"></script>
+  </body>
+</html>

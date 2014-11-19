@@ -48,18 +48,35 @@
       </div>
     </div>
     <div class="container" role="main">
-      <div class="sect1">
-      <h2 id="welcome"><a class="anchor" href="#welcome"></a>Welcome!</h2>
-      <div class="sectionbody">
-      <div class="paragraph">
-      <p>This is a small site of an open source developer writing about the
-      open-source-developery stuff from time to time.</p>
+      <h1>
+        <i class="fa fa-tag"></i>
+        byteman
+      </h1>
+      <div class="post">
+        <div class="header">
+          <h3>
+            <a href="http://lukas.krejci.pw/posts/2011/10/10/using-byteman-to-detect-native-memory-leaks/">Using Byteman to detect native memory leaks</a>
+          </h3>
+          <p class="author">
+            posted on
+            <strong class="date">10 October 2011</strong>
+          </p>
+        </div>
+        <p class="content">
+          In <a href="http://rhq-project.org">RHQ</a> we use the <a href="http://augeas.net">Augeas</a>
+          library to do the configuration file parsing and updates for us in some
+          of the plugins. Augeas in itself is pretty cool and the language for
+          describing the structure of arbitrary configuration files and howto
+          update them is pretty powerful. The only downside to using Augeas is
+          that it is a C library and we therefore have to bind with it and use it
+          more carefully so that we don&#8217;t leak its native resources that aren&#8217;t
+          under control of JVM&#8217;s garbage collector.
+        </p>
       </div>
-      <div class="paragraph">
-      <p>You can check out my short <a href="about/">bio</a> or my <a href="posts/">blog</a>.</p>
-      </div>
-      </div>
-      </div>
+      <ul class="pagination">
+        <li class="disabled"><a href="/posts/tags/byteman/">&laquo;</a><li class="disabled"><a href="#">&lsaquo;</a><li class="active"><a href="/posts/tags/byteman/">1</a><li class="disabled"><a href="#">&rsaquo;</a><li class="disabled"><a href="/posts/tags/byteman/">&raquo;</a>
+      </ul>
+      <div class="pagination-stop"></div>
       <hr>
       <footer>
         <div class="links">

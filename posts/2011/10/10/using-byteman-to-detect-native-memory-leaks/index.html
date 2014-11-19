@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Reinventing The Wheel</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <style>
+      body {
+        padding-top: 60px;
+      }
+    </style>
+    <link href="http://lukas.krejci.pw/stylesheets/styles.css" rel="stylesheet" type="text/css">
+    <link href="http://lukas.krejci.pw/stylesheets/font-awesome/font-awesome.css" rel="stylesheet" type="text/css">
+    <script src="http://lukas.krejci.pw/javascripts/lightbox.min.js" type="text/javascript"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shim.googlecode.com/svn/trunk/html5.js" type="text/javascript"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button class="navbar-toggle" data-target=".navbar-collapse" data-toggle="collapse" type="button">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="nav navbar-brand" href="http://lukas.krejci.pw" title="Reinventing The Wheel">
+            <i class="fa fa-refresh"></i>
+            <i class="fa fa-cog"></i>
+          </a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="http://lukas.krejci.pw/posts" title="Blog">
+                <i class="fa fa-pencil"></i>
+              </a>
+            </li>
+            <li>
+              <a href="http://lukas.krejci.pw/about" title="About">
+                <i class="fa fa-info"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container" role="main">
+      <div class="post-navigation">
+        <div class="previous">
+          <div class="label">
+            &laquo;
+          </div>
+          <div class="nav-link">
+            <a href="/posts/2011/08/04/making-testng-listeners-apply-to-only-certain-classes/">Making TestNG @Listeners apply to only certain classes</a>
+          </div>
+        </div>
+        <div class="next">
+          <div class="nav-link">
+            <a href="/posts/2012/01/13/git-merging-after-a-revert/">Git - merging after a revert</a>
+          </div>
+          <div class="label">
+            &raquo;
+          </div>
+        </div>
+      </div>
+      <h1 class="title">
+        Using Byteman to detect native memory leaks
+      </h1>
+      <div class="author">
+        posted on
+        <span class="date">
+          10 Oct 2011
+        </span>
+      </div>
+      <div class="tags">
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/java/">java</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/rhq/">rhq</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/byteman/">byteman</a>
+      </div>
+      <div class="paragraph">
+      <p>In <a href="http://rhq-project.org">RHQ</a> we use the <a href="http://augeas.net">Augeas</a>
+      library to do the configuration file parsing and updates for us in some
+      of the plugins. Augeas in itself is pretty cool and the language for
+      describing the structure of arbitrary configuration files and howto
+      update them is pretty powerful. The only downside to using Augeas is
+      that it is a C library and we therefore have to bind with it and use it
+      more carefully so that we don&#8217;t leak its native resources that aren&#8217;t
+      under control of JVM&#8217;s garbage collector.</p>
+      </div>
+      <div class="paragraph">
+      <p>It all boils down to just calling the <code>close()</code> method on the Augeas
+      instance whenever we&#8217;re done with it.</p>
+      </div>
+      <div class="paragraph">
+      <p>As simple as it may seem, we still managed to mess it up and found out
+      that there were some memory leaks that caused the RHQ agent to slowly
+      (or not so slowly depending on its configuration) grow its memory usage
+      which JVM&#8217;s maximum heap size couldn&#8217;t guard.</p>
+      </div>
+      <div class="paragraph">
+      <p>The source code of the apache plugin isn&#8217;t the simplest and there are
+      many places that invoke augeas which interact in various ways so
+      debugging this all isn&#8217;t the simplest task. Even harder, we thought,
+      would be to come up with some unit tests that would make sure that we
+      don&#8217;t leak augeas references.</p>
+      </div>
+      <div class="paragraph">
+      <p>But then a crazy idea entered my mind. I knew
+      <a href="http://www.jboss.org/byteman">Byteman</a> was a tool for bytecode
+      manipulation. My idea was to somehow use it in our tests to do reference
+      counting (by instrumenting the Augeas <code>init()</code> and <code>close()</code> calls).
+      Turns out it is <strong>very</strong> easy to do that with Byteman and I was able to
+      achieve even more than I hoped for.</p>
+      </div>
+      <div class="paragraph">
+      <p>Byteman integrates quite nicely with TestNG that we use for our unit
+      tests and so in a couple of steps I was able to implement a reference
+      counter that not only was able to give me a difference between number of
+      augeas instances creates vs. closed <strong>BUT</strong> it would also give me the
+      stacktraces to the code that created a reference that wasn&#8217;t `close()&#8217;d
+      afterwards. That I think is absolutely cool.</p>
+      </div>
+      <div class="paragraph">
+      <p>The rules I added to my tests are quite simple:</p>
+      </div>
+      <div class="listingblock">
+      <div class="content">
+      <pre class="CodeRay highlight"><code data-lang="java"><span style="color:#007">@BMRules</span>(&#x000A;    rules = {&#x000A;        <span style="color:#007">@BMRule</span>(name = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">increment reference count on Augeas init</span><span style="color:#710">&quot;</span></span>, targetClass = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">net.augeas.Augeas</span><span style="color:#710">&quot;</span></span>,&#x000A;            targetMethod = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">(String, String, int)</span><span style="color:#710">&quot;</span></span>,&#x000A;            helper = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">org.rhq.plugins.apache.augeas.CreateAndCloseTracker</span><span style="color:#710">&quot;</span></span>,&#x000A;            action = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">recordCreate($0, formatStack())</span><span style="color:#710">&quot;</span></span>),&#x000A;        <span style="color:#007">@BMRule</span>(name = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">decrement reference count on Augeas close</span><span style="color:#710">&quot;</span></span>, targetClass = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">net.augeas.Augeas</span><span style="color:#710">&quot;</span></span>,&#x000A;            targetMethod = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">close()</span><span style="color:#710">&quot;</span></span>, helper = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">org.rhq.plugins.apache.augeas.CreateAndCloseTracker</span><span style="color:#710">&quot;</span></span>,&#x000A;            action = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">recordClose($0, formatStack())</span><span style="color:#710">&quot;</span></span>) })</code></pre>
+      </div>
+      </div>
+      <div class="paragraph">
+      <p>There indeed is nothing special about them. I tell Byteman to call my
+      helper class&#8217;s <code>recordCreate()</code> method whenever Augeas <code>init()</code> is
+      called and to pass in the augeas instance (<code>$0</code> stands for <code>this</code> in the
+      context of the instrumented method) and a nice callstack. The second
+      rule merely calls <code>recordClose</code> on my helper with the instance of augeas
+      that is being closed and again the callstack.</p>
+      </div>
+      <div class="paragraph">
+      <p>You can check out the code for my helper class
+      <a href="http://git.fedorahosted.org/git/?p=rhq/rhq.git;a=blob;f=modules/integration-tests/apache-plugin-test/src/test/java/org/rhq/plugins/apache/augeas/CreateAndCloseTracker.java;hb=HEAD">here</a>.
+      As you might have guessed, it&#8217;s only a little more than a hashmap where
+      the keys are the augeas instances and values are the callstacks. By
+      processing this map after all the tests are run, I can quite easily
+      figure out if <strong>and where</strong> we leak native memory.</p>
+      </div>
+      
+                  <div id="disqus_thread"></div>
+                  <script type="text/javascript">
+                  var disqus_shortname = 'lukaskrejcipw';
+                  var disqus_url = "http://lukas.krejci.pw/posts/2011/10/10/using-byteman-to-detect-native-memory-leaks/";
+                  var disqus_developer = null;
+                  var disqus_identifier = "715f426960cff735afa849ff2e66108bdcd29087";
+                  (function() {
+                    var dsq = document.createElement("script"); dsq.type = "text/javascript"; dsq.async = true;
+                    dsq.src = "http://lukaskrejcipw.disqus.com/embed.js";
+                    (document.getElementsByTagName("head")[0] || document.getElementsByTagName("body")[0]).appendChild(dsq);
+                  })();
+                  </script>
+                  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript=lukaskrejcipw">comments powered by Disqus.</a></noscript>
+      <hr>
+      <footer>
+        <div class="links">
+          <a href="http://lukas.krejci.pw/blog.atom">
+            <i class="fa fa-rss"></i>
+          </a>
+          <a href="https://plus.google.com/+lukaskrejci/">
+            <i class="fa fa-google-plus"></i>
+          </a>
+          <a href="https://twitter.com/@krejcil">
+            <i class="fa fa-twitter"></i>
+          </a>
+          <a href="https://www.linkedin.com/profile/view?id=45241872">
+            <i class="fa fa-linkedin"></i>
+          </a>
+        </div>
+        <p>&copy; Lukáš Krejčí 2014</p>
+      </footer>
+    </div>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+    <script src="http://lukas.krejci.pw/javascripts/bootstrap/collapse.js" type="text/javascript"></script>
+  </body>
+</html>

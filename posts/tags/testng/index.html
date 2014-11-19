@@ -48,18 +48,34 @@
       </div>
     </div>
     <div class="container" role="main">
-      <div class="sect1">
-      <h2 id="welcome"><a class="anchor" href="#welcome"></a>Welcome!</h2>
-      <div class="sectionbody">
-      <div class="paragraph">
-      <p>This is a small site of an open source developer writing about the
-      open-source-developery stuff from time to time.</p>
+      <h1>
+        <i class="fa fa-tag"></i>
+        testng
+      </h1>
+      <div class="post">
+        <div class="header">
+          <h3>
+            <a href="http://lukas.krejci.pw/posts/2011/08/04/making-testng-listeners-apply-to-only-certain-classes/">Making TestNG @Listeners apply to only certain classes</a>
+          </h3>
+          <p class="author">
+            posted on
+            <strong class="date">04 August 2011</strong>
+          </p>
+        </div>
+        <p class="content">
+          <a href="http://testng.org">TestNG</a> defines a <code>@Listeners</code> annotation that is
+          analogous to the <code>listeners</code> element in the test suite configuration xml
+          file. This annotation can be put on any class but is not applied only to
+          that class, but uniformly on <strong>all</strong> the tests in the test suite (which is
+          in line with the purpose of the original XML element but it certainly is
+          confusing to see an annotation on a class that has much wider influence
+          but that single class).
+        </p>
       </div>
-      <div class="paragraph">
-      <p>You can check out my short <a href="about/">bio</a> or my <a href="posts/">blog</a>.</p>
-      </div>
-      </div>
-      </div>
+      <ul class="pagination">
+        <li class="disabled"><a href="/posts/tags/testng/">&laquo;</a><li class="disabled"><a href="#">&lsaquo;</a><li class="active"><a href="/posts/tags/testng/">1</a><li class="disabled"><a href="#">&rsaquo;</a><li class="disabled"><a href="/posts/tags/testng/">&raquo;</a>
+      </ul>
+      <div class="pagination-stop"></div>
       <hr>
       <footer>
         <div class="links">

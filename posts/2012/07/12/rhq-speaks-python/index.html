@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Reinventing The Wheel</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <style>
+      body {
+        padding-top: 60px;
+      }
+    </style>
+    <link href="http://lukas.krejci.pw/stylesheets/styles.css" rel="stylesheet" type="text/css">
+    <link href="http://lukas.krejci.pw/stylesheets/font-awesome/font-awesome.css" rel="stylesheet" type="text/css">
+    <script src="http://lukas.krejci.pw/javascripts/lightbox.min.js" type="text/javascript"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shim.googlecode.com/svn/trunk/html5.js" type="text/javascript"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button class="navbar-toggle" data-target=".navbar-collapse" data-toggle="collapse" type="button">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="nav navbar-brand" href="http://lukas.krejci.pw" title="Reinventing The Wheel">
+            <i class="fa fa-refresh"></i>
+            <i class="fa fa-cog"></i>
+          </a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="http://lukas.krejci.pw/posts" title="Blog">
+                <i class="fa fa-pencil"></i>
+              </a>
+            </li>
+            <li>
+              <a href="http://lukas.krejci.pw/about" title="About">
+                <i class="fa fa-info"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container" role="main">
+      <div class="post-navigation">
+        <div class="previous">
+          <div class="label">
+            &laquo;
+          </div>
+          <div class="nav-link">
+            <a href="/posts/2012/03/09/rhq-meets-arquillian/">RHQ meets Arquillian</a>
+          </div>
+        </div>
+        <div class="next">
+          <div class="nav-link">
+            <a href="/posts/2012/09/14/the-dark-powers-of-powermock/">The Dark Powers of PowerMock</a>
+          </div>
+          <div class="label">
+            &raquo;
+          </div>
+        </div>
+      </div>
+      <h1 class="title">
+        RHQ speaks Python
+      </h1>
+      <div class="author">
+        posted on
+        <span class="date">
+          12 Jul 2012
+        </span>
+      </div>
+      <div class="tags">
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/java/">java</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/rhq/">rhq</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/scripting/">scripting</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/python/">python</a>
+      </div>
+      <div class="paragraph">
+      <p>In the past few weeks I was quite busy refactoring RHQ&#8217;s CLI and
+      scripting integration. Funnily enough it all started because we wanted
+      to add the support for CommonJS modules to our javascript interface.
+      During the course of the refactoring, I found out that I&#8217;m actually
+      heading in the direction of completely separating the "language" support
+      from the rest of the RHQ, which then only speaks to it through the
+      Java&#8217;s standard scripting APIs which are language independent.</p>
+      </div>
+      <div class="paragraph">
+      <p>RHQ&#8217;s CLI was originally only implemented for and tightly coupled with
+      javascript for which the JRE has support by default. The problem we had
+      was that the version of Rhino (i.e. the Javascript implementation Java
+      uses) that is bundled with the JRE does not support CommonJS modules
+      while the newer versions do.</p>
+      </div>
+      <div class="paragraph">
+      <p>But this is about Python, right? So once I saw that we have a nice
+      little API that one can implement to add support for another language, I
+      thought why not try bringing another language to RHQ? The obvious choice
+      was Python - the most popular language among the ones that can integrate
+      with Java. So I grabbed Jython and started looking if would be possible
+      to do with it everything we needed to do to implement our API. And it
+      turned out it was - a mere 200 lines of Java code and RHQ can speak
+      Python :)</p>
+      </div>
+      <div class="paragraph">
+      <p>Let&#8217;s look at how the API we needed implement looked like:</p>
+      </div>
+      <div class="listingblock">
+      <div class="content">
+      <pre class="CodeRay highlight"><code data-lang="java"><span style="color:#088;font-weight:bold">public</span> <span style="color:#339;font-weight:bold">class</span> <span style="color:#B06;font-weight:bold">PythonScriptEngineProvider</span> <span style="color:#088;font-weight:bold">implements</span> ScriptEngineProvider {&#x000A;&#x000A;    <span style="color:#007">@Override</span>&#x000A;    <span style="color:#088;font-weight:bold">public</span> <span style="color:#0a8;font-weight:bold">String</span> getSupportedLanguage() {&#x000A;        <span style="color:#080;font-weight:bold">return</span> <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">python</span><span style="color:#710">&quot;</span></span>;&#x000A;    }&#x000A;&#x000A;    <span style="color:#007">@Override</span>&#x000A;    <span style="color:#088;font-weight:bold">public</span> ScriptEngineInitializer getInitializer() {&#x000A;        <span style="color:#080;font-weight:bold">return</span> <span style="color:#080;font-weight:bold">new</span> PythonScriptEngineInitializer();&#x000A;    }&#x000A;&#x000A;    <span style="color:#007">@Override</span>&#x000A;    <span style="color:#088;font-weight:bold">public</span> CodeCompletion getCodeCompletion() {&#x000A;        <span style="color:#777">// XXX are we gonna support code completion for multiple langs in the CLI?</span>&#x000A;        <span style="color:#080;font-weight:bold">return</span> <span style="color:#069">null</span>;&#x000A;    }&#x000A;}</code></pre>
+      </div>
+      </div>
+      <div class="paragraph">
+      <p>Now that&#8217;s quite trivial, isn&#8217;t it? :) Of course, this is the basic
+      interface which just delegates the real work to other classes. So let&#8217;s
+      look at the <code>ScriptEngineInitializer</code> - the class that really does the
+      all the important work:</p>
+      </div>
+      <div class="listingblock">
+      <div class="content">
+      <pre class="CodeRay highlight"><code data-lang="java"><span style="color:#088;font-weight:bold">public</span> <span style="color:#339;font-weight:bold">class</span> <span style="color:#B06;font-weight:bold">PythonScriptEngineInitializer</span> <span style="color:#088;font-weight:bold">implements</span> ScriptEngineInitializer {&#x000A;&#x000A;    <span style="color:#088;font-weight:bold">private</span> <span style="color:#088;font-weight:bold">static</span> <span style="color:#088;font-weight:bold">final</span> Log LOG = LogFactory.getLog(PythonScriptEngineInitializer.class);&#x000A;&#x000A;    <span style="color:#088;font-weight:bold">static</span> {&#x000A;        <span style="color:#0a8;font-weight:bold">Properties</span> props = <span style="color:#080;font-weight:bold">new</span> <span style="color:#0a8;font-weight:bold">Properties</span>();&#x000A;        props.put(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">python.packages.paths</span><span style="color:#710">&quot;</span></span>, <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">java.class.path,sun.boot.class.path</span><span style="color:#710">&quot;</span></span>);&#x000A;        props.put(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">python.packages.directories</span><span style="color:#710">&quot;</span></span>, <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">java.ext.dirs</span><span style="color:#710">&quot;</span></span>);&#x000A;        props.put(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">python.cachedir.skip</span><span style="color:#710">&quot;</span></span>, <span style="color:#069">false</span>);&#x000A;        PythonInterpreter.initialize(<span style="color:#0a8;font-weight:bold">System</span>.getProperties(), props, <span style="color:#069">null</span>);&#x000A;    }&#x000A;&#x000A;    <span style="color:#088;font-weight:bold">private</span> ScriptEngineManager engineManager = <span style="color:#080;font-weight:bold">new</span> ScriptEngineManager();&#x000A;&#x000A;    <span style="color:#007">@Override</span>&#x000A;    <span style="color:#088;font-weight:bold">public</span> ScriptEngine instantiate(<span style="color:#0a8;font-weight:bold">Set</span> packages, <span style="color:#0a8;font-weight:bold">PermissionCollection</span> permissions) <span style="color:#088;font-weight:bold">throws</span> ScriptException {&#x000A;&#x000A;        ScriptEngine eng = engineManager.getEngineByName(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">python</span><span style="color:#710">&quot;</span></span>);&#x000A;&#x000A;        <span style="color:#777">//XXX this might not work perfectly in jython</span>&#x000A;        <span style="color:#777">//but we can't make it work perfectly either, so let's just</span>&#x000A;        <span style="color:#777">//keep our fingers crossed..</span>&#x000A;        <span style="color:#777">//http://www.jython.org/jythonbook/en/1.0/ModulesPackages.html#from-import-statements</span>&#x000A;        <span style="color:#080;font-weight:bold">for</span> (<span style="color:#0a8;font-weight:bold">String</span> pkg : packages) {&#x000A;            <span style="color:#080;font-weight:bold">try</span> {&#x000A;                eng.eval(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">from </span><span style="color:#710">&quot;</span></span> + pkg + <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20"> import *</span><span style="color:#b0b">\n</span><span style="color:#710">&quot;</span></span>);&#x000A;            } <span style="color:#080;font-weight:bold">catch</span> (ScriptException e) {&#x000A;                <span style="color:#777">//well, let's just keep things going, this is not fatal...</span>&#x000A;                LOG.info(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">Python script engine could not pre-import members of package '</span><span style="color:#710">&quot;</span></span> + pkg + <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">'.</span><span style="color:#710">&quot;</span></span>);&#x000A;            }&#x000A;        }&#x000A;&#x000A;        <span style="color:#777">//fingers crossed we can secure jython like this</span>&#x000A;        <span style="color:#080;font-weight:bold">return</span> permissions == <span style="color:#069">null</span> ? eng : <span style="color:#080;font-weight:bold">new</span> SandboxedScriptEngine(eng, permissions);&#x000A;    }&#x000A;&#x000A;    <span style="color:#007">@Override</span>&#x000A;    <span style="color:#088;font-weight:bold">public</span> <span style="color:#339;font-weight:bold">void</span> installScriptSourceProvider(ScriptEngine scriptEngine, ScriptSourceProvider provider) {&#x000A;        PySystemState sys = Py.getSystemState();&#x000A;        <span style="color:#080;font-weight:bold">if</span> (sys != <span style="color:#069">null</span>) {&#x000A;            sys.path_hooks.append(<span style="color:#080;font-weight:bold">new</span> PythonSourceProvider(provider));&#x000A;        }&#x000A;    }&#x000A;&#x000A;    <span style="color:#007">@Override</span>&#x000A;    <span style="color:#088;font-weight:bold">public</span> <span style="color:#0a8;font-weight:bold">Set</span> generateIndirectionMethods(<span style="color:#0a8;font-weight:bold">String</span> boundObjectName, <span style="color:#0a8;font-weight:bold">Set</span> overloadedMethods) {&#x000A;        <span style="color:#080;font-weight:bold">if</span> (overloadedMethods == <span style="color:#069">null</span> || overloadedMethods.isEmpty()) {&#x000A;            <span style="color:#080;font-weight:bold">return</span> <span style="color:#0a8;font-weight:bold">Collections</span>.emptySet();&#x000A;        }&#x000A;&#x000A;        <span style="color:#0a8;font-weight:bold">Set</span> argCnts = <span style="color:#080;font-weight:bold">new</span> <span style="color:#0a8;font-weight:bold">HashSet</span>();&#x000A;        <span style="color:#080;font-weight:bold">for</span> (<span style="color:#0a8;font-weight:bold">Method</span> m : overloadedMethods) {&#x000A;            argCnts.add(m.getParameterTypes().length);&#x000A;        }&#x000A;&#x000A;        <span style="color:#0a8;font-weight:bold">String</span> methodName = overloadedMethods.iterator().next().getName();&#x000A;        <span style="color:#0a8;font-weight:bold">StringBuilder</span> functionBody = <span style="color:#080;font-weight:bold">new</span> <span style="color:#0a8;font-weight:bold">StringBuilder</span>();&#x000A;&#x000A;        functionBody.append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">def </span><span style="color:#710">&quot;</span></span>).append(methodName).append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">(*args, **kwargs):</span><span style="color:#b0b">\n</span><span style="color:#710">&quot;</span></span>);&#x000A;        functionBody.append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#b0b">\t</span><span style="color:#710">&quot;</span></span>).append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">if len(kwargs) &gt; 0:</span><span style="color:#b0b">\n</span><span style="color:#710">&quot;</span></span>);&#x000A;        functionBody.append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#b0b">\t</span><span style="color:#b0b">\t</span><span style="color:#710">&quot;</span></span>).append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">raise ValueError(</span><span style="color:#b0b">\&quot;</span><span style="color:#D20">Named arguments not supported for Java methods</span><span style="color:#b0b">\&quot;</span><span style="color:#D20">)</span><span style="color:#b0b">\n</span><span style="color:#710">&quot;</span></span>);&#x000A;        functionBody.append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#b0b">\t</span><span style="color:#710">&quot;</span></span>).append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">argCnt = len(args)</span><span style="color:#b0b">\n</span><span style="color:#710">&quot;</span></span>);&#x000A;&#x000A;        <span style="color:#080;font-weight:bold">for</span> (<span style="color:#0a8;font-weight:bold">Integer</span> argCnt : argCnts) {&#x000A;            functionBody.append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#b0b">\t</span><span style="color:#710">&quot;</span></span>).append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">if argCnt == </span><span style="color:#710">&quot;</span></span>).append(argCnt).append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">:</span><span style="color:#b0b">\n</span><span style="color:#710">&quot;</span></span>);&#x000A;            functionBody.append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#b0b">\t</span><span style="color:#b0b">\t</span><span style="color:#D20">return </span><span style="color:#710">&quot;</span></span>).append(boundObjectName).append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">.</span><span style="color:#710">&quot;</span></span>).append(methodName).append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">(</span><span style="color:#710">&quot;</span></span>);&#x000A;            <span style="color:#339;font-weight:bold">int</span> last = argCnt - <span style="color:#00D">1</span>;&#x000A;            <span style="color:#080;font-weight:bold">for</span> (<span style="color:#339;font-weight:bold">int</span> i = <span style="color:#00D">0</span>; i &lt; argCnt; ++i) {&#x000A;                functionBody.append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">args[</span><span style="color:#710">&quot;</span></span>).append(i).append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">]</span><span style="color:#710">&quot;</span></span>);&#x000A;                <span style="color:#080;font-weight:bold">if</span> (i &lt; last) {&#x000A;                    functionBody.append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">, </span><span style="color:#710">&quot;</span></span>);&#x000A;                }&#x000A;            }&#x000A;            functionBody.append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">)</span><span style="color:#b0b">\n</span><span style="color:#710">&quot;</span></span>);&#x000A;        }&#x000A;&#x000A;        <span style="color:#080;font-weight:bold">return</span> <span style="color:#0a8;font-weight:bold">Collections</span>.singleton(functionBody.toString());&#x000A;    }&#x000A;&#x000A;    <span style="color:#007">@Override</span>&#x000A;    <span style="color:#088;font-weight:bold">public</span> <span style="color:#0a8;font-weight:bold">String</span> extractUserFriendlyErrorMessage(ScriptException e) {&#x000A;        <span style="color:#080;font-weight:bold">return</span> e.getMessage();&#x000A;    }&#x000A;}</code></pre>
+      </div>
+      </div>
+      <div class="paragraph">
+      <p>The most important task of the initializer is to instantiate the script
+      engine of the language it supports and intialize it - pre-import java
+      packages of RHQ&#8217;s classes and apply java security to the script engine.
+      The other tasks it has are to install a "script source provider" to the
+      engine (the script source provider is a class that is able to locate a
+      script "somewhere"), to extract a user-friendly error message from the
+      script exception and finally to generate "indirection methods" -
+      basically define top level functions that delegate to a method on
+      certain object. All these methods are there so that RHQ can correctly
+      set up the bindings that the scripts then can use to access and
+      manipulate RHQ data.</p>
+      </div>
+      <div class="paragraph">
+      <p>I won&#8217;t be listing the source of the class that integrates the source
+      providers with Python, you can take a look at it
+      <a href="http://git.fedorahosted.org/git/?p=rhq/rhq.git;a=blob;f=modules/enterprise/scripting/python/src/main/java/org/rhq/scripting/python/PythonSourceProvider.java;hb=HEAD">here</a>.
+      But I&#8217;ll show you how it is possible in your local CLI session to import
+      a python script stored in the RHQ server in some repository:</p>
+      </div>
+      <div class="listingblock">
+      <div class="content">
+      <pre class="CodeRay highlight"><code data-lang="python"><span style="color:#080;font-weight:bold">import</span> <span style="color:#B44;font-weight:bold">sys</span>&#x000A;&#x000A;sys.path.append(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">__rhq__:rhq://repositories/my_repo/</span><span style="color:#710">&quot;</span></span>)&#x000A;&#x000A;<span style="color:#080;font-weight:bold">import</span> <span style="color:#B44;font-weight:bold">my_script</span> <span style="color:#080;font-weight:bold">as</span> foo&#x000A;&#x000A;...</code></pre>
+      </div>
+      </div>
+      <div class="paragraph">
+      <p>RHQ has a <code>path_hook</code> in Python that looks for paths prefixed with
+      <code><em>rhq</em>:</code>. After that you can specify the root URL that the RHQ&#8217;s
+      source provider understand. The import statement then looks for a module
+      under that URL. In the example above, you will import the script called
+      <code>my_script.py</code> that is stored on the RHQ server in the repository called
+      <code>my_repo</code>.</p>
+      </div>
+      <div class="paragraph">
+      <p>So that&#8217;s it. You can see that adding support for another scripting
+      language is not that hard. What language will you add? ;-) You can read
+      more about the language support on the
+      <a href="https://docs.jboss.org/author/display/RHQ/Multiple+languages+in+CLI">RHQ
+      wiki</a>.</p>
+      </div>
+      
+                  <div id="disqus_thread"></div>
+                  <script type="text/javascript">
+                  var disqus_shortname = 'lukaskrejcipw';
+                  var disqus_url = "http://lukas.krejci.pw/posts/2012/07/12/rhq-speaks-python/";
+                  var disqus_developer = null;
+                  var disqus_identifier = "d2fb8459438060d8f62951e89ebdb361b96ee6da";
+                  (function() {
+                    var dsq = document.createElement("script"); dsq.type = "text/javascript"; dsq.async = true;
+                    dsq.src = "http://lukaskrejcipw.disqus.com/embed.js";
+                    (document.getElementsByTagName("head")[0] || document.getElementsByTagName("body")[0]).appendChild(dsq);
+                  })();
+                  </script>
+                  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript=lukaskrejcipw">comments powered by Disqus.</a></noscript>
+      <hr>
+      <footer>
+        <div class="links">
+          <a href="http://lukas.krejci.pw/blog.atom">
+            <i class="fa fa-rss"></i>
+          </a>
+          <a href="https://plus.google.com/+lukaskrejci/">
+            <i class="fa fa-google-plus"></i>
+          </a>
+          <a href="https://twitter.com/@krejcil">
+            <i class="fa fa-twitter"></i>
+          </a>
+          <a href="https://www.linkedin.com/profile/view?id=45241872">
+            <i class="fa fa-linkedin"></i>
+          </a>
+        </div>
+        <p>&copy; Lukáš Krejčí 2014</p>
+      </footer>
+    </div>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+    <script src="http://lukas.krejci.pw/javascripts/bootstrap/collapse.js" type="text/javascript"></script>
+  </body>
+</html>

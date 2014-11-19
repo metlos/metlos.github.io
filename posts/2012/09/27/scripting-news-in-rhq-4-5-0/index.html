@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Reinventing The Wheel</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <style>
+      body {
+        padding-top: 60px;
+      }
+    </style>
+    <link href="http://lukas.krejci.pw/stylesheets/styles.css" rel="stylesheet" type="text/css">
+    <link href="http://lukas.krejci.pw/stylesheets/font-awesome/font-awesome.css" rel="stylesheet" type="text/css">
+    <script src="http://lukas.krejci.pw/javascripts/lightbox.min.js" type="text/javascript"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shim.googlecode.com/svn/trunk/html5.js" type="text/javascript"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button class="navbar-toggle" data-target=".navbar-collapse" data-toggle="collapse" type="button">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="nav navbar-brand" href="http://lukas.krejci.pw" title="Reinventing The Wheel">
+            <i class="fa fa-refresh"></i>
+            <i class="fa fa-cog"></i>
+          </a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="http://lukas.krejci.pw/posts" title="Blog">
+                <i class="fa fa-pencil"></i>
+              </a>
+            </li>
+            <li>
+              <a href="http://lukas.krejci.pw/about" title="About">
+                <i class="fa fa-info"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container" role="main">
+      <div class="post-navigation">
+        <div class="previous">
+          <div class="label">
+            &laquo;
+          </div>
+          <div class="nav-link">
+            <a href="/posts/2012/09/14/the-dark-powers-of-powermock/">The Dark Powers of PowerMock</a>
+          </div>
+        </div>
+        <div class="next">
+          <div class="nav-link">
+            <a href="/posts/2013/09/05/phantom-reads-and-data-paging/">Phantom reads and data paging</a>
+          </div>
+          <div class="label">
+            &raquo;
+          </div>
+        </div>
+      </div>
+      <h1 class="title">
+        Scripting News in RHQ 4.5.0
+      </h1>
+      <div class="author">
+        posted on
+        <span class="date">
+          27 Sep 2012
+        </span>
+      </div>
+      <div class="tags">
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/java/">java</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/rhq/">rhq</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/scripting/">scripting</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/javascript/">javascript</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/python/">python</a>
+      </div>
+      <div class="paragraph">
+      <p><a href="https://docs.jboss.org/author/display/RHQ/Release+Notes+4.5.0">RHQ 4.5.0</a>
+      (which we released today) contains a great deal of scripting
+      enhancements that I think are worth talking about in more detail. In my
+      eyes, the changes make the scripting in RHQ ready for serious use.</p>
+      </div>
+      <div class="sect3">
+      <h4 id="commonjs-support"><a class="anchor" href="#commonjs-support"></a>CommonJS support</h4>
+      <div class="paragraph">
+      <p>This, I think, is huge. In the previous versions of RHQ, the only way of
+      reusing functionality from another script was to use the <code>exec -f</code>
+      command in the interactive CLI shell (in another words, this was NOT
+      available in the batch mode, which is how majority of people are using
+      the CLI). So if you needed to implement something bigger and needed to
+      split your code in several files (as any sane person would do), you only
+      had 1 option - before executing the "script", you needed to concatenate
+      all the scripts together.</p>
+      </div>
+      <div class="paragraph">
+      <p>This sucked big time and we knew it ;) But we didn&#8217;t want to just add
+      functionality to "include files" - that would be too easy ;) At the same
+      time it wouldn&#8217;t solve the problem, really. The problem with just
+      "including" the files into the current "scope" of the script is that
+      this would mean that each and every variable or function in those files
+      would have to be uniquely named because javascript lacks any sort of
+      namespace/package resolution. Fortunately, the
+      <a href="http://commonjs.org">CommonJS</a> spec solves this problem.</p>
+      </div>
+      <div class="paragraph">
+      <p>Here&#8217;s how you use a module. Notice that you assign the module to a
+      variable and that&#8217;s how you prevent the "pollution" of your scope. The
+      loaded module can have methods and variables with the same name as your
+      script and they won&#8217;t influence each other:</p>
+      </div>
+      <div class="listingblock">
+      <div class="content">
+      <pre class="CodeRay highlight"><code data-lang="javascript"><span style="color:#080;font-weight:bold">var</span> myfuncs = require(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">modules:/myfuncs</span><span style="color:#710">&quot;</span></span>);&#x000A;myfuncs.helloworld();</code></pre>
+      </div>
+      </div>
+      <div class="paragraph">
+      <p>You may wonder what that <code>"modules:/myfuncs"</code> identifier means. It is an
+      URI that the underlying library uses to locate the script to load. This
+      "sourcing" mechanism is pluggable and I will talk about it more in the
+      following chapter. To see some examples of the modules, you can look at
+      the
+      <a href="http://git.fedorahosted.org/cgit/rhq/rhq.git/tree/modules/enterprise/remoting/cli/src/main/samples/modules"><code>samples/modules</code></a>
+      directory of your CLI deployment and you can also read some
+      documentation about this on
+      <a href="https://docs.jboss.org/author/display/RHQ/Script+Modularity+-+Javascript">our
+      wiki</a>.</p>
+      </div>
+      </div>
+      <div class="sect3">
+      <h4 id="locating-the-scripts"><a class="anchor" href="#locating-the-scripts"></a>Locating the scripts</h4>
+      <div class="paragraph">
+      <p>With the ability to load the scripts there comes the problem of locating
+      them. For the standalone CLI, the obvious location for them is the
+      filesystem, but what about alert notification scripts on the RHQ server?
+      These scripts are stored in RHQ repositories which don&#8217;t have a
+      filesystem location. The solution is not to tie the scripts to the
+      filesystem but have a generic way of locating them using URIs and a
+      pluggable way of resolving those URIs and loading the scripts from
+      various locations. This means that you can for example load the script
+      from an RHQ repository in your standalone CLI installation, or to define
+      1 central location for your local CLI scripts and use the "modules" URIs
+      to refer to them. Or you can easily implement your own "source provider"
+      and for example load the scripts from your internal git repo or ftp or
+      whatnot. RHQ comes with a small set of predefined source providers,
+      documented
+      <a href="https://docs.jboss.org/author/display/RHQ/Script+Sources">here</a>.</p>
+      </div>
+      <div class="paragraph">
+      <p>With this ability at hand, you can make an RHQ repository a central
+      place for your scripts that you will then be able to use universally -
+      both in the standalone CLI installations and also in the alert
+      notification scripts.</p>
+      </div>
+      </div>
+      <div class="sect3">
+      <h4 id="python"><a class="anchor" href="#python"></a>Python</h4>
+      <div class="paragraph">
+      <p>In previous versions, our scripting was tied to Javascript. Thanks to
+      quite a bit of refactoring, the RHQ scripting integration is now
+      language independent and language support is pluggable (see my previous
+      <a href="http://metlos.wordpress.com/2012/07/12/rhq-speaks-python/">post</a> where I
+      detail how this was done in case of Python).</p>
+      </div>
+      <div class="paragraph">
+      <p>What this all means is that you can now write your CLI scripts in Python
+      and still use the same API as you were able to use before from
+      Javascript only. I.e. you will find the <code>ResourceManager</code>,
+      <code>AlertManager</code> and all the other predefined variables that define the
+      RHQ API available in Python, too. The only thing that this initial
+      implementation doesn&#8217;t support is code-completion in the interactive CLI
+      shell.</p>
+      </div>
+      <div class="paragraph">
+      <p>Last but not least, the ability load the scripts from various locations
+      is available in Python, too, using an automatically installed
+      <a href="http://www.python.org/dev/peps/pep-0302/">path_hook</a>. You can read about
+      how to use it on our
+      <a href="https://docs.jboss.org/author/display/RHQ/Script+Modularity+-+Python">wiki</a>.
+      This also means that you can now write your alert notification scripts
+      in Python, too.</p>
+      </div>
+      <div class="paragraph">
+      <p>When running an alert notification script (i.e. an alert notification of
+      the type "CLI Script"), the language of the script is determined from
+      the script file extension - ".py" for python and ".js" for javascript.
+      When you start the CLI shell, you pass your language of choice using the
+      <code>--language</code> commandline parameter - "javascript" or "python" are the
+      obvious possible values for it.</p>
+      </div>
+      </div>
+      <div class="sect3">
+      <h4 id="conclusion"><a class="anchor" href="#conclusion"></a>Conclusion</h4>
+      <div class="paragraph">
+      <p>In my opinion, these changes are great and will allow our users to
+      really start building useful tools using our scripting support. If you
+      feel like you&#8217;ve come up with a script module you would like to share
+      with the RHQ community, why don&#8217;t you just send a pull request to our
+      github <a href="https://github.com/rhq-project/samples">repo</a> with sample scripts?</p>
+      </div>
+      </div>
+      
+                  <div id="disqus_thread"></div>
+                  <script type="text/javascript">
+                  var disqus_shortname = 'lukaskrejcipw';
+                  var disqus_url = "http://lukas.krejci.pw/posts/2012/09/27/scripting-news-in-rhq-4-5-0/";
+                  var disqus_developer = null;
+                  var disqus_identifier = "ea898bda32cecd482ab3de47799da2444e0d7048";
+                  (function() {
+                    var dsq = document.createElement("script"); dsq.type = "text/javascript"; dsq.async = true;
+                    dsq.src = "http://lukaskrejcipw.disqus.com/embed.js";
+                    (document.getElementsByTagName("head")[0] || document.getElementsByTagName("body")[0]).appendChild(dsq);
+                  })();
+                  </script>
+                  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript=lukaskrejcipw">comments powered by Disqus.</a></noscript>
+      <hr>
+      <footer>
+        <div class="links">
+          <a href="http://lukas.krejci.pw/blog.atom">
+            <i class="fa fa-rss"></i>
+          </a>
+          <a href="https://plus.google.com/+lukaskrejci/">
+            <i class="fa fa-google-plus"></i>
+          </a>
+          <a href="https://twitter.com/@krejcil">
+            <i class="fa fa-twitter"></i>
+          </a>
+          <a href="https://www.linkedin.com/profile/view?id=45241872">
+            <i class="fa fa-linkedin"></i>
+          </a>
+        </div>
+        <p>&copy; Lukáš Krejčí 2014</p>
+      </footer>
+    </div>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+    <script src="http://lukas.krejci.pw/javascripts/bootstrap/collapse.js" type="text/javascript"></script>
+  </body>
+</html>

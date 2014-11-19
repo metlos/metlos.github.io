@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Reinventing The Wheel</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <style>
+      body {
+        padding-top: 60px;
+      }
+    </style>
+    <link href="http://lukas.krejci.pw/stylesheets/styles.css" rel="stylesheet" type="text/css">
+    <link href="http://lukas.krejci.pw/stylesheets/font-awesome/font-awesome.css" rel="stylesheet" type="text/css">
+    <script src="http://lukas.krejci.pw/javascripts/lightbox.min.js" type="text/javascript"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shim.googlecode.com/svn/trunk/html5.js" type="text/javascript"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button class="navbar-toggle" data-target=".navbar-collapse" data-toggle="collapse" type="button">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="nav navbar-brand" href="http://lukas.krejci.pw" title="Reinventing The Wheel">
+            <i class="fa fa-refresh"></i>
+            <i class="fa fa-cog"></i>
+          </a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="http://lukas.krejci.pw/posts" title="Blog">
+                <i class="fa fa-pencil"></i>
+              </a>
+            </li>
+            <li>
+              <a href="http://lukas.krejci.pw/about" title="About">
+                <i class="fa fa-info"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container" role="main">
+      <div class="post-navigation">
+        <div class="previous">
+          <div class="label">
+            &laquo;
+          </div>
+          <div class="nav-link">
+            <a href="/posts/2010/05/11/measuring-ui-performance/">Measuring UI Performance</a>
+          </div>
+        </div>
+        <div class="next">
+          <div class="nav-link">
+            <a href="/posts/2010/09/20/database-setup-for-testng-tests/">Database setup for TestNG tests</a>
+          </div>
+          <div class="label">
+            &raquo;
+          </div>
+        </div>
+      </div>
+      <h1 class="title">
+        How to export data from a DB using JPA model
+      </h1>
+      <div class="author">
+        posted on
+        <span class="date">
+          15 Sep 2010
+        </span>
+      </div>
+      <div class="tags">
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/java/">java</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/rhq/">rhq</a>
+      </div>
+      <div class="paragraph">
+      <p>In <a href="http://www.rhq-project.org">RHQ</a>, we are currently contemplating
+      implementing a series of automated performance tests. For those tests to
+      make any sense, we have to provide them with some initial data to work
+      with.</p>
+      </div>
+      <div class="paragraph">
+      <p>So the goal is quite simple. Export some defined dataset from an
+      existing database, store it away and import it back again before a test
+      is run. Easy. When I started researching the export part of the problem,
+      I thought there&#8217;s bound to be something out there already in existence
+      that would do the job. And I was right. The
+      <a href="http://www.dbunit.org">dbUnit</a> project is exactly what I was looking for.
+      They support extraction of the data from the database and can even
+      follow the foreign key relationships (in both ways) to export the
+      necessary data to keep referential integrity. Great.</p>
+      </div>
+      <div class="paragraph">
+      <p>But wait. Our data model isn&#8217;t that simple. I certainly want all the
+      data that my core dataset depends on to be included in the export, but I
+      also want <strong>some</strong> of the data that depends on my dataset.</p>
+      </div>
+      <div class="paragraph">
+      <p>Ok that didn&#8217;t make much sense, so let me introduce a little example to
+      explain the problems on. First, let&#8217;s look at the class diagram, that
+      will show the relationships between different entities in the model.</p>
+      </div>
+      <div class="paragraph">
+      <p><a href="../../../../../images/class-diagram.png" data-lightbox="1">
+      <span class="image thumb"><img src="/images/class-diagram.png" alt="Class diagram"></span>
+      </a></p>
+      </div>
+      <div class="paragraph">
+      <p>These entities are mapped to these tables:</p>
+      </div>
+      <div class="paragraph">
+      <p><a href="../../../../../images/entity-relationship-diagram.png" data-lightbox="2">
+      <span class="image thumb"><img src="/images/entity-relationship-diagram.png" alt="Entity diagram"></span>
+      </a></p>
+      </div>
+      <div class="paragraph">
+      <p>Now let&#8217;s say I wanted to export all the resources with their
+      configurations but I&#8217;m not interested in the alert definitions.
+      Obviously this is going to require some kind of configuration.</p>
+      </div>
+      <div class="paragraph">
+      <p>I could stay on the database level and for example create a
+      configuration where I would specifically state something like "I want
+      data from this table." or "I&#8217;m interested in this table and all its
+      dependencies but this particular foreign key." and implement a dbUnit
+      search based on this configuration but I&#8217;m a Java developer and even
+      though I can write my SQL statements and design a (more or less)
+      reasonable database schema, I certainly don&#8217;t love that job. To find out
+      the relationships between tables, looking at the JPA annotated Java code
+      is much quicker and more pleasant to me than looking at table and
+      foreign key definitions.</p>
+      </div>
+      <div class="paragraph">
+      <p>Before I dive into more details let me show you the configuration file
+      that will achieve the above goal:</p>
+      </div>
+      <div class="listingblock">
+      <div class="content">
+      <pre class="CodeRay highlight"><code data-lang="xml"><span style="color:#070;font-weight:bold">&lt;graph</span> <span style="color:#b48">includeExplicitDependentsImplicitly</span>=<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">true</span><span style="color:#710">&quot;</span></span>&#x000A;       <span style="color:#b48">packagePrefix</span>=<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">org.rhq.core.domain.resource</span><span style="color:#710">&quot;</span></span><span style="color:#070;font-weight:bold">&gt;</span>&#x000A;    <span style="color:#070;font-weight:bold">&lt;entity</span> <span style="color:#b48">name</span>=<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">Resource</span><span style="color:#710">&quot;</span></span> <span style="color:#b48">root</span>=<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">true</span><span style="color:#710">&quot;</span></span><span style="color:#070;font-weight:bold">&gt;</span>&#x000A;        <span style="color:#070;font-weight:bold">&lt;filter&gt;</span>SELECT ID FROM RESOURCE WHERE NAME='myResource'<span style="color:#070;font-weight:bold">&lt;/filter&gt;</span>&#x000A;        <span style="color:#070;font-weight:bold">&lt;rel</span> <span style="color:#b48">field</span>=<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">configuration</span><span style="color:#710">&quot;</span></span><span style="color:#070;font-weight:bold">/&gt;</span>&#x000A;    <span style="color:#070;font-weight:bold">&lt;/entity&gt;</span>&#x000A;    <span style="color:#070;font-weight:bold">&lt;entity</span> <span style="color:#b48">name</span>=<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">ResourceType</span><span style="color:#710">&quot;</span></span> <span style="color:#b48">includeAllFields</span>=<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">true</span><span style="color:#710">&quot;</span></span><span style="color:#070;font-weight:bold">&gt;</span>&#x000A;        <span style="color:#070;font-weight:bold">&lt;rel</span> <span style="color:#b48">field</span>=<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">resources</span><span style="color:#710">&quot;</span></span> <span style="color:#b48">exclude</span>=<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">true</span><span style="color:#710">&quot;</span></span><span style="color:#070;font-weight:bold">/&gt;</span>&#x000A;    <span style="color:#070;font-weight:bold">&lt;/entity&gt;</span>&#x000A;<span style="color:#070;font-weight:bold">&lt;/graph&gt;</span></code></pre>
+      </div>
+      </div>
+      <div class="paragraph">
+      <p>This is still a bit of a mouthful but at the same time it&#8217;s very
+      powerful. What I&#8217;m basically saying there is that I want to export a
+      resource with the name "myResource" and I only want to include its
+      configuration in the export (of course the simple properties of the
+      resource are implicitly exported but configuration is the only
+      <strong>relationship</strong> that gets exported along with it). Further, I&#8217;m telling
+      the exporter that it&#8217;s free to export all the data of the ResourceType
+      entities my Resource is dependent upon but I don&#8217;t want to include the
+      resources of the ResourceType in the export. This is to prevent the
+      other resources to "leak" to the export due to the explicit relationship
+      of the ResourceType and its "child" Resource entities. The mysterious
+      &#8220;includeExplicitDependetsImplicitly&#8221; attribute tells the exporter to
+      include all dependents of the entities it encounters unless configured
+      otherwise.</p>
+      </div>
+      <div class="paragraph">
+      <p>I want the above configuration to cause the exporter to include the
+      following in the export (look at the above class diagram to get a better
+      understanding why I need the below):</p>
+      </div>
+      <div class="olist arabic">
+      <ol class="arabic">
+      <li>
+      <p>"myResource" resource</p>
+      </li>
+      <li>
+      <p>Its configuration and all its properties</p>
+      </li>
+      <li>
+      <p>The resource type of the resource</p>
+      </li>
+      <li>
+      <p>The configuration definition associated with that resource type</p>
+      </li>
+      <li>
+      <p>All the property definitions of the configuration definition</p>
+      </li>
+      </ol>
+      </div>
+      <div class="sect1">
+      <h2 id="details"><a class="anchor" href="#details"></a>Details</h2>
+      <div class="sectionbody">
+      <div class="paragraph">
+      <p>To achieve the above functionality I needed to create a bridge that
+      would look at the JPA annotations in my domain layer classes and
+      translate the relationships expressed there into SQL terms. Once I have
+      the SQL representation of the domain model relationships I can feed that
+      into dbUnit and use it to export and import the data as well (I also let
+      dbUnit figure out the proper insertion order to keep the referential
+      integrity but more on that later).</p>
+      </div>
+      <div class="paragraph">
+      <p>The code turned out to be fairly simple and basically consists of
+      creation of an
+      <a href="http://git.fedorahosted.org/git/?p=rhq/rhq.git;a=blob;f=modules/helpers/perftest-support/src/main/java/org/rhq/helpers/perftest/support/jpa/EntityDependencyGraph.java;hb=perftest">entity
+      dependency graph</a>, where nodes represent the JPA entities and edges
+      represent individual relationships (i.e. a directed, cyclic, multiply
+      connected graph). The JPA annotations contain all the information to
+      translate the entities and their relationships into the terms of SQL
+      tables and columns, the translation is only slightly complicated by the
+      possibility of relation tables (e.g. a relation table to describe a
+      <code>@ManyToMany</code> relationship) (the code is
+      <a href="http://git.fedorahosted.org/git/?p=rhq/rhq.git;a=blob;f=modules/helpers/perftest-support/src/main/java/org/rhq/helpers/perftest/support/jpa/mapping/MappingTranslator.java;hb=perftest">here</a>).</p>
+      </div>
+      <div class="paragraph">
+      <p>With the SQL mapping at hand I could start linking the code I had with
+      the functionality defined in dbUnit. I chose to implement it as a
+      <a href="http://www.dbunit.org/apidocs/index.html?org/dbunit/dataset/filter/ITableFilter.html">ITableFilter</a>.
+      By inheriting from
+      <a href="http://www.dbunit.org/apidocs/index.html?org/dbunit/database/DatabaseSequenceFilter.html">DatabaseSequenceFilter</a>
+      I got the correct table order in the export for free and by retaining
+      the insertion order in the sets of the allowed PKs while traversing the
+      entity dependency graph, I was also able to retain the correct insertion
+      order even in cases where a table has a foreign key on itself. My
+      <code>EntityRelationshipFilter</code> can use the above mentioned configuration to
+      restrict the traversal of the entity dependency graph and therefore
+      restrict the resulting export (by relying on
+      <a href="http://git.fedorahosted.org/git/?p=rhq/rhq.git;a=blob;f=modules/helpers/perftest-support/src/main/java/org/rhq/helpers/perftest/support/jpa/ConfigurableDependencyInclusionResolver.java;hb=perftest">an
+      inclusion resolver</a> to tell it what to do). You can take a look at the
+      code
+      <a href="http://git.fedorahosted.org/git/?p=rhq/rhq.git;a=blob;f=modules/helpers/perftest-support/src/main/java/org/rhq/helpers/perftest/support/dbunit/EntityRelationshipFilter.java;hb=perftest">here</a>.</p>
+      </div>
+      </div>
+      </div>
+      <div class="sect1">
+      <h2 id="conclusion"><a class="anchor" href="#conclusion"></a>Conclusion</h2>
+      <div class="sectionbody">
+      <div class="paragraph">
+      <p>Relying on dbUnit to do the "low-level" data export and import for me, I
+      could create a "Java developer friendly" data export tool in just a
+      little bit more than a week&#8217;s time. The good thing is that it is
+      completely generic and so it could be easily used with other projects
+      than RHQ (of course, more work would be required on the tool in that
+      case because the translation from JPA to SQL isn&#8217;t completely
+      implemented. For example it&#8217;s missing handling the implicit values of
+      the JPA annotations (e.g. the table name derived from the class name if
+      the <code>@Table</code> annotation doesn&#8217;t explicitly specify a name) and I&#8217;m sure
+      I missed some corner cases in handling the relationships as well. But it
+      seems to work for RHQ at the moment which means that it&#8217;s already quite
+      capable because our domain model isn&#8217;t a trivial one. If there was
+      interest, I&#8217;d be more than happy to help create a standalone
+      full-featured tool out of this and take it out of the RHQ
+      <a href="http://git.fedorahosted.org/git/?p=rhq/rhq.git;a=tree;f=modules/helpers/perftest-support;hb=perftest">source
+      code</a>. You can read even more about the tool on our wiki
+      <a href="http://wiki.rhq-project.org/display/RHQ/Entity+Driven+Database+Setup">here</a>.</p>
+      </div>
+      <hr>
+      <div class="paragraph">
+      <p>In the next blog entry, I&#8217;ll take a look at the "import and test" part
+      of the solution, namely on the integration of the database setup and
+      data import with TestNG.</p>
+      </div>
+      </div>
+      </div>
+      
+                  <div id="disqus_thread"></div>
+                  <script type="text/javascript">
+                  var disqus_shortname = 'lukaskrejcipw';
+                  var disqus_url = "http://lukas.krejci.pw/posts/2010/09/15/how-to-export-data-from-a-db-using-jpa-model/";
+                  var disqus_developer = null;
+                  var disqus_identifier = "ce034099e7485f91b71c0b510a906fd8e18b6fe2";
+                  (function() {
+                    var dsq = document.createElement("script"); dsq.type = "text/javascript"; dsq.async = true;
+                    dsq.src = "http://lukaskrejcipw.disqus.com/embed.js";
+                    (document.getElementsByTagName("head")[0] || document.getElementsByTagName("body")[0]).appendChild(dsq);
+                  })();
+                  </script>
+                  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript=lukaskrejcipw">comments powered by Disqus.</a></noscript>
+      <hr>
+      <footer>
+        <div class="links">
+          <a href="http://lukas.krejci.pw/blog.atom">
+            <i class="fa fa-rss"></i>
+          </a>
+          <a href="https://plus.google.com/+lukaskrejci/">
+            <i class="fa fa-google-plus"></i>
+          </a>
+          <a href="https://twitter.com/@krejcil">
+            <i class="fa fa-twitter"></i>
+          </a>
+          <a href="https://www.linkedin.com/profile/view?id=45241872">
+            <i class="fa fa-linkedin"></i>
+          </a>
+        </div>
+        <p>&copy; Lukáš Krejčí 2014</p>
+      </footer>
+    </div>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+    <script src="http://lukas.krejci.pw/javascripts/bootstrap/collapse.js" type="text/javascript"></script>
+  </body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Reinventing The Wheel</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <style>
+      body {
+        padding-top: 60px;
+      }
+    </style>
+    <link href="http://lukas.krejci.pw/stylesheets/styles.css" rel="stylesheet" type="text/css">
+    <link href="http://lukas.krejci.pw/stylesheets/font-awesome/font-awesome.css" rel="stylesheet" type="text/css">
+    <script src="http://lukas.krejci.pw/javascripts/lightbox.min.js" type="text/javascript"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shim.googlecode.com/svn/trunk/html5.js" type="text/javascript"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button class="navbar-toggle" data-target=".navbar-collapse" data-toggle="collapse" type="button">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="nav navbar-brand" href="http://lukas.krejci.pw" title="Reinventing The Wheel">
+            <i class="fa fa-refresh"></i>
+            <i class="fa fa-cog"></i>
+          </a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="http://lukas.krejci.pw/posts" title="Blog">
+                <i class="fa fa-pencil"></i>
+              </a>
+            </li>
+            <li>
+              <a href="http://lukas.krejci.pw/about" title="About">
+                <i class="fa fa-info"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container" role="main">
+      <div class="post-navigation">
+        <div class="previous">
+          <div class="label">
+            &laquo;
+          </div>
+          <div class="nav-link">
+            <a href="/posts/2010/04/09/hello-world/">System.println("Hello world!");</a>
+          </div>
+        </div>
+        <div class="next">
+          <div class="nav-link">
+            <a href="/posts/2010/09/15/how-to-export-data-from-a-db-using-jpa-model/">How to export data from a DB using JPA model</a>
+          </div>
+          <div class="label">
+            &raquo;
+          </div>
+        </div>
+      </div>
+      <h1 class="title">
+        Measuring UI Performance
+      </h1>
+      <div class="author">
+        posted on
+        <span class="date">
+          11 May 2010
+        </span>
+      </div>
+      <div class="tags">
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/java/">java</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/rhq/">rhq</a>
+      </div>
+      <div class="paragraph">
+      <p><a href="http://rhq-project.org">RHQ</a> is not built to be used by thousands of
+      users at the same time. We rather add features to the page so that it
+      contains maximum information and context so that the users can make the
+      right decisions about their infrastructure. But even then we do care
+      about a responsive and reasonably performing UI (and the system as a
+      whole of course).</p>
+      </div>
+      <div class="paragraph">
+      <p>Recently I&#8217;ve been tasked with researching theperformance of our UI layer.
+      Obviously there are a thousand factors influencing the responsiveness of the
+      UI but for the web app developer,there are only a few s/he can do something
+      about. Those in a nutshell are CPU and memory usage of the web app itself
+      and efficiency in the communication with whatever back-end the webapp is
+      using to pull its data from (usually a DB, but in case of RHQ also the
+      agents). We did quite a bit of testing on database and agent communication
+      but we lacked the performance data for the UI layer of RHQ. There obviously
+      are some candidate pages that one might suspect of a need for performance
+      enhancements but which ones to pick? The first thing to decide was to
+      actually determine how to measure the performance of the system. One of
+      the obvious metrics to use is the response time of the HTTP requests.
+      This would be a good start because it&#8217;d give me a basic understanding of
+      where the problems might lie. I&#8217;d have the starting point to start my
+      search for performance bottlenecks in the URLs that exhibit slow
+      response times. On the other hand the results could be skewed by
+      environmental parameters out of my control like network lag and such
+      like. But since I had the access to the server I wanted to test on, I
+      could do better by measuring metrics on the server itself. On the server
+      side I have much broader choice of what and how I want to measure. If I
+      wanted to I could even insert "probes" into the server to collect stats
+      that are otherwise unobtainable from outside of the server&#8217;s JVM. I
+      needed to test several areas of UI using one common testing "algorithm".
+      I needed to simulate a number of users logging in into the UI and
+      visiting a number of pages from the "same area" (or rather the same page
+      with different query parameters). This simple scenario would give me the
+      least performing areas of UI I could then focus on. To summarize, here
+      is what I was after:</p>
+      </div>
+      <div class="ulist">
+      <ul>
+      <li>
+      <p>don&#8217;t bother with response times on the client, i can get the same and
+      more information on the server-side</p>
+      </li>
+      <li>
+      <p>look for memory hogs</p>
+      </li>
+      <li>
+      <p>look for CPU intensive tasks</p>
+      </li>
+      <li>
+      <p>ideally I want to know more than just the URL at which a bottleneck
+      might be.</p>
+      </li>
+      </ul>
+      </div>
+      <div class="paragraph">
+      <p>Measuring the memory can either be done by asking <code>ps</code> command or the
+      JVM itself can provide the heap dump or summary. Measuring CPU is best
+      done just by <code>ps</code>. The JVM can also provide a thread-dump on demand.
+      Neither heap summary nor CPU usage nor the thread-dump can be collected
+      from within the JVM in a simple way (if at all) so I couldn&#8217;t track each
+      request directly using some kind of probe (i.e. adding a filter that
+      would collect the data to the RHQ web application). All I could do was
+      to track the request times (either by configuring the embedded Tomcat to
+      produce access log or better by configuring the RHQ server itself to
+      collect response time information about itself
+      (<a href="http://wiki.rhq-project.org/display/RHQ/Response+Time+Filter">http://wiki.rhq-project.org/display/RHQ/Response+Time+Filter</a>))
+      and periodically collect the stats using an external script.</p>
+      </div>
+      <div class="sect3">
+      <h4 id="technologies-used"><a class="anchor" href="#technologies-used"></a>Technologies Used</h4>
+      <div class="paragraph">
+      <p>For generating the load on the server I used
+      <a href="http://jakarta.apache.org/jmeter/">JMeter</a>. The nice thing about this
+      tool is that it is easily parametrized by data either on command-line or
+      in CSV files. Checkout the very simple JMeter script that I used to
+      generate the load I needed on the server. The script for starting and
+      stopping the RHQ server and JMeter and collecting the stats on memory
+      and CPU usage was simply written in Bash. I used an
+      <a href="http://www.r-project.org/">R</a> script to generate graphs out of the CSV
+      files that the Bash script produces from the collected data. You can
+      find all the source code at the end of this blog entry, if you are
+      interested in trying it out yourself.</p>
+      </div>
+      </div>
+      <div class="sect3">
+      <h4 id="interpreting-the-results"><a class="anchor" href="#interpreting-the-results"></a>Interpreting The Results</h4>
+      <div class="paragraph">
+      <p>The script collects 3 kinds of statistics. The per-thread CPU usage, the
+      JVM heap summary and the JVM thread dump. The scripts run N iterations
+      and collect the data for each stat in each iteration and store it off in
+      a file. After the script has finished collecting the data, it creates
+      CSV files from the CPU usage and heap summary files for easier
+      consumption of that data. Finally, if R is installed, the CSV files are
+      converted into graphs (yet easier to digest). The JVM thread dump is
+      collected so that one can get a basic idea about what each of the
+      threads in the graph has been doing during the iterations (obviously
+      this is not precise because of the time elapsed between the CPU usage
+      and thread dump collections). Let&#8217;s take a look at an example graph of
+      the CPU usage.</p>
+      </div>
+      <div class="paragraph">
+      <p><a href="../../../../../images/measuring_ui_performance__cpu_graph_example.png" data-lightbox="1">
+      <span class="image thumb"><img src="/images/measuring_ui_performance__cpu_graph_example.png" alt="CPU Graph" width="100%"></span>
+      </a></p>
+      </div>
+      <div class="paragraph">
+      <p>In there, you can see that one of the threads dominates the CPU usage in
+      the later iterations. This obviously is a sign of a problem. Taking note
+      of the thread id (in the legend of the graph) and comparing it with a
+      <code>"tid"</code> of the threas in the thread dumps in various iterations reveals
+      that that is the VM Thread doing garbage collection. Looking at the heap
+      summary graph</p>
+      </div>
+      <div class="paragraph">
+      <p><a href="../../../../../images/measuring_ui_performance__heap_graph_example.png" data-lightbox="2">
+      <span class="image thumb"><img src="/images/measuring_ui_performance__heap_graph_example.png" alt="Heap Graph" width="100%"></span>
+      </a></p>
+      </div>
+      <div class="paragraph">
+      <p>one can easily observe that the application was consuming just too much
+      memory and that the GC, even though it tried really hard, couldn&#8217;t
+      handle the load. From that point on, finding the offending code was as
+      easy as taking a full heap dump before and after the test (using the
+      jmap tool that comes with JDK) and finding out which classes contributed
+      the most to the increased memory usage.
+      <a href="http://www.eclipse.org/mat/">Eclipse Mat</a> is a great tool for such tasks
+      and finding the code that caused this issue was a breeze.</p>
+      </div>
+      </div>
+      <div class="sect3">
+      <h4 id="tests-layout"><a class="anchor" href="#tests-layout"></a>Tests Layout</h4>
+      <div class="paragraph">
+      <p>If you read all the way down here, you probably are interested in how is
+      this all put together and how does the script obtain all that data. You
+      can find the link to the complete source code at the end of this entry.
+      The zip file you can download contains the bash scripts necessary to run
+      the tests along with an example "test suite" containing the JMeter test
+      file, example input data for it and example tests.</p>
+      </div>
+      <div class="ulist">
+      <ul>
+      <li>
+      <p>*testsuite-runner*the bash script that will start the testsuite in the
+      background</p>
+      </li>
+      <li>
+      <p>*testsuite-run*examines the testsuite directory and spawns the
+      individual tests inside it</p>
+      </li>
+      <li>
+      <p>*test-run*runs a single test (i.e. starts RHQ server, starts JMeter
+      with the test file, collects stats, stops JMeter, stops RHQ server and
+      produces the outputs)</p>
+      </li>
+      <li>
+      <p><strong>example-testsuite</strong> contains the testsuite files</p>
+      <div class="ulist">
+      <ul>
+      <li>
+      <p><strong>input</strong> a folder containing input data used in the tests. You will
+      have to modify these files in order to make the tests work with your RHQ
+      installation.</p>
+      </li>
+      <li>
+      <p><strong>tests</strong> contains the tests directories</p>
+      </li>
+      </ul>
+      </div>
+      </li>
+      </ul>
+      </div>
+      <div class="paragraph">
+      <p>The example invocation of the script would like like the following:</p>
+      </div>
+      <div class="paragraph">
+      <p><code>testsuite-runner path/to/rhq/server/install path/to/jmeter/install NUMBER_OF_STATS_COLLECTIONS path/to/the/testsuite/directory</code></p>
+      </div>
+      <div class="paragraph">
+      <p>This command would start the testsuite in the background. For each test
+      in the testsuite, an RHQ server and would be started, then a JMeter
+      instance would be fired up with the test file for given testsuite and a
+      the provided number of stats measurements would be taken in 10 second
+      intervals. After that the JMeter and RHQ servers woul be taken down and
+      the next test in the testsuite would be started.</p>
+      </div>
+      </div>
+      <div class="sect3">
+      <h4 id="future-work"><a class="anchor" href="#future-work"></a>Future work</h4>
+      <div class="paragraph">
+      <p>Obviously, these scripts are just a quick and dirty solution to my
+      requirements and have much to be added to them to become truly automated
+      and useful. For starters, the tests do not connect to the RHQ database
+      which makes them tied to a particular RHQ inventory (at a defined point
+      in time), because the inputs of the tests hardcode resource ids. The
+      first enhancement would therefore be to rewrite the scripts in a more
+      capable (scripting) language and make them database agnostic.</p>
+      </div>
+      <hr>
+      <div class="paragraph">
+      <p>The source files and an example testsuite can be downloaded from
+      <a href="http://www.box.net/shared/tqs4g3k3g9">here</a>.</p>
+      </div>
+      </div>
+      
+                  <div id="disqus_thread"></div>
+                  <script type="text/javascript">
+                  var disqus_shortname = 'lukaskrejcipw';
+                  var disqus_url = "http://lukas.krejci.pw/posts/2010/05/11/measuring-ui-performance/";
+                  var disqus_developer = null;
+                  var disqus_identifier = "0b3a9c27c36e49d29266c4d97962cd5efefdd208";
+                  (function() {
+                    var dsq = document.createElement("script"); dsq.type = "text/javascript"; dsq.async = true;
+                    dsq.src = "http://lukaskrejcipw.disqus.com/embed.js";
+                    (document.getElementsByTagName("head")[0] || document.getElementsByTagName("body")[0]).appendChild(dsq);
+                  })();
+                  </script>
+                  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript=lukaskrejcipw">comments powered by Disqus.</a></noscript>
+      <hr>
+      <footer>
+        <div class="links">
+          <a href="http://lukas.krejci.pw/blog.atom">
+            <i class="fa fa-rss"></i>
+          </a>
+          <a href="https://plus.google.com/+lukaskrejci/">
+            <i class="fa fa-google-plus"></i>
+          </a>
+          <a href="https://twitter.com/@krejcil">
+            <i class="fa fa-twitter"></i>
+          </a>
+          <a href="https://www.linkedin.com/profile/view?id=45241872">
+            <i class="fa fa-linkedin"></i>
+          </a>
+        </div>
+        <p>&copy; Lukáš Krejčí 2014</p>
+      </footer>
+    </div>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+    <script src="http://lukas.krejci.pw/javascripts/bootstrap/collapse.js" type="text/javascript"></script>
+  </body>
+</html>
