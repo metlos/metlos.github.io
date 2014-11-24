@@ -32,8 +32,10 @@
 //## Settings for some of the most global styles.
 
 //* Background color for `<body>`.
+// $body-bg:               #fff
 $body-bg:                #222;
 //* Global text color on `<body>`.
+// $text-color:            $gray-dark
 $text-color:            $gray-lighter;
 
 //* Global textual link color.
@@ -45,21 +47,30 @@ $text-color:            $gray-lighter;
 //
 //## Font, line-height, and color for body text, headings, and more.
 
+// $font-family-sans-serif:  "Helvetica Neue", Helvetica, Arial, sans-serif
 $font-family-sans-serif:  Signika, "Helvetica Neue", Helvetica, Arial, sans-serif;
+// $font-family-serif:       Georgia, "Times New Roman", Times, serif
 $font-family-serif:       Merriweather, Georgia, "Times New Roman", Times, serif;
 //* Default monospace fonts for `<code>`, `<kbd>`, and `<pre>`.
 // $font-family-monospace:   Menlo, Monaco, Consolas, "Courier New", monospace
 $font-family-base:        $font-family-serif;
 
+// $font-size-base:          14px
 $font-size-base:          12pt;
 // $font-size-large:         ceil(($font-size-base * 1.25)) // ~18px
 // $font-size-small:         ceil(($font-size-base * 0.85)) // ~12px
 
+// $font-size-h1:            floor(($font-size-base * 2.6)) // ~36px
 $font-size-h1:            floor(($font-size-base * 3.6));
+// $font-size-h2:            floor(($font-size-base * 2.15)) // ~30px
 $font-size-h2:            floor(($font-size-base * 3.15));
+// $font-size-h3:            ceil(($font-size-base * 1.7)) // ~24px
 $font-size-h3:            ceil(($font-size-base * 2.7));
+// $font-size-h4:            ceil(($font-size-base * 1.25)) // ~18px
 $font-size-h4:            ceil(($font-size-base * 2.25));
+// $font-size-h5:            $font-size-base
 $font-size-h5:            ceil(($font-size-base * 2));
+// $font-size-h6:            ceil(($font-size-base * 0.85)) // ~12px
 $font-size-h6:            ceil(($font-size-base * 1.85));
 
 //* Unit-less `line-height` for use in components like buttons.
@@ -68,9 +79,11 @@ $font-size-h6:            ceil(($font-size-base * 1.85));
 // $line-height-computed:    floor(($font-size-base * $line-height-base)) // ~20px
 
 //* By default, this inherits from the `<body>`.
+// $headings-font-family:    inherit
 $headings-font-family:    $font-family-sans-serif;
 //$headings-font-weight:    500;
 // $headings-line-height:    1.1
+// $headings-color:          inherit
 $headings-color:          $gray-lighter;
 
 //== Iconography
@@ -262,31 +275,35 @@ $headings-color:          $gray-lighter;
 // Note: Deprecated $screen-xs and $screen-phone as of v3.0.1
 // Note: Deprecated $screen-xs-min as of v3.2.0
 // $screen-xs:                  480px
-// $screen-xs-min:              $screen-xs
-// $screen-phone:               $screen-xs-min
+$screen-xs:                  270px;
+$screen-xs-min:              $screen-xs;
+$screen-phone:               $screen-xs-min;
 
 // Small screen / tablet
 // Note: Deprecated $screen-sm and $screen-tablet as of v3.0.1
 // $screen-sm:                  768px
-// $screen-sm-min:              $screen-sm
-// $screen-tablet:              $screen-sm-min
+$screen-sm:                  320px;
+$screen-sm-min:              $screen-sm;
+$screen-tablet:              $screen-sm-min;
 
 // Medium screen / desktop
 // Note: Deprecated $screen-md and $screen-desktop as of v3.0.1
 // $screen-md:                  992px
-// $screen-md-min:              $screen-md
-// $screen-desktop:             $screen-md-min
+$screen-md:                  720px;
+$screen-md-min:              $screen-md;
+$screen-desktop:             $screen-md-min;
 
 // Large screen / wide desktop
 // Note: Deprecated $screen-lg and $screen-lg-desktop as of v3.0.1
 // $screen-lg:                  1200px
-// $screen-lg-min:              $screen-lg
-// $screen-lg-desktop:          $screen-lg-min
+$screen-lg:                  992px;
+$screen-lg-min:              $screen-lg;
+$screen-lg-desktop:          $screen-lg-min;
 
 // So media queries don't overlap when required, provide a maximum
-// $screen-xs-max:              ($screen-sm-min - 1)
-// $screen-sm-max:              ($screen-md-min - 1)
-// $screen-md-max:              ($screen-lg-min - 1)
+$screen-xs-max:              ($screen-sm-min - 1);
+$screen-sm-max:              ($screen-md-min - 1);
+$screen-md-max:              ($screen-lg-min - 1);
 
 //== Grid system
 //
@@ -298,7 +315,7 @@ $headings-color:          $gray-lighter;
 // $grid-gutter-width:         30px
 // Navbar collapse
 //* Point at which the navbar becomes uncollapsed.
-// $grid-float-breakpoint:     $screen-sm-min
+$grid-float-breakpoint:     $screen-xs-min;
 //* Point at which the navbar begins collapsing.
 // $grid-float-breakpoint-max: ($grid-float-breakpoint - 1)
 
@@ -307,33 +324,36 @@ $headings-color:          $gray-lighter;
 //## Define the maximum width of `.container` for different screen sizes.
 
 // Small screen / tablet
-$container-tablet:             ((480px + $grid-gutter-width));
+//$container-tablet:             ((480px + $grid-gutter-width));
 //* For `$screen-sm-min` and up.
-$container-sm:                 $container-tablet;
+//$container-sm:                 $container-tablet;
 
 // Medium screen / desktop
-$container-desktop:            ((768px + $grid-gutter-width));
+//$container-desktop:            ((768px + $grid-gutter-width));
 //* For `$screen-md-min` and up.
-$container-md:                 $container-desktop;
+//$container-md:                 $container-desktop;
 
 // Large screen / wide desktop
-$container-large-desktop:      ((768px + $grid-gutter-width));
+//$container-large-desktop:      ((768px + $grid-gutter-width));
 //* For `$screen-lg-min` and up.
-$container-lg:                 $container-large-desktop;
+//$container-lg:                 $container-large-desktop;
 
 //== Navbar
 //
 //##
 
 // Basics of a navbar
-$navbar-height:                    $font-size-base + 4;
-// $navbar-margin-bottom:             $line-height-computed
+// $navbar-height:                    50px
+$navbar-height:                    $font-size-h1 + 2;
+$navbar-margin-bottom:             $line-height-computed;
 // $navbar-border-radius:             $border-radius-base
 // $navbar-padding-horizontal:        floor(($grid-gutter-width / 2))
 // $navbar-padding-vertical:          (($navbar-height - $line-height-computed) / 2)
 // $navbar-collapse-max-height:       340px
 
+// $navbar-default-color:             #777
 $navbar-default-color:             $gray-light;
+// $navbar-default-bg:                #f8f8f8
 $navbar-default-bg:                $gray-dark;
 // $navbar-default-border:            darken($navbar-default-bg, 6.5%)
 
@@ -358,7 +378,9 @@ $navbar-default-bg:                $gray-dark;
 
 // Inverted navbar
 // Reset inverted navbar basics
+// $navbar-inverse-color:                      $gray-light
 $navbar-inverse-color:                      black;
+// $navbar-inverse-bg:                         #222
 $navbar-inverse-bg:                         $gray-dark;
 // $navbar-inverse-border:                     darken($navbar-inverse-bg, 10%)
 
@@ -387,6 +409,7 @@ $navbar-inverse-bg:                         $gray-dark;
 
 //=== Shared nav styles
 // $nav-link-padding:                          10px 15px
+// $nav-link-hover-bg:                         $gray-lighter
 $nav-link-hover-bg:                         $gray-light;
 
 // $nav-disabled-link-color:                   $gray-light
@@ -532,6 +555,7 @@ $nav-link-hover-bg:                         $gray-light;
 //* Success label background color
 // $label-success-bg:            $brand-success
 //* Info label background color
+// $label-info-bg:               $brand-info
 $label-info-bg:               $label-default-bg;
 //* Warning label background color
 // $label-warning-bg:            $brand-warning
@@ -776,14 +800,19 @@ $label-info-bg:               $label-default-bg;
 //
 //##
 
+// $code-color:                  #c7254e
 $code-color:                  $gray-lighter;
+// $code-bg:                     #f9f2f4
 $code-bg:                     inherit;
 
 // $kbd-color:                   #fff
 // $kbd-bg:                      #333
 
+// $pre-bg:                      #f5f5f5
 $pre-bg:                      $gray-darker;
+// $pre-color:                   $gray-dark
 $pre-color:                   $gray-lighter;
+// $pre-border-color:            #ccc
 $pre-border-color:            $gray-lighter;
 // $pre-scrollable-max-height:   340px
 

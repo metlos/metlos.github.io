@@ -6,13 +6,19 @@
     font-family : $font-family-sans-serif;
 }
 
-.nav {
+.container-fluid {
+  max-width: $screen-sm-max;
+}
+
+.nav, .navbar li a {
   vertical-align: center;
   padding: auto;
 }
 
-.navbar-brand {
+.navbar-brand, .navbar li a {
   padding-top: 0;
+  padding-bottom: 0;
+  font-size: $font-size-h1;
 }
 
 p {
