@@ -1,0 +1,63 @@
+---
+:title: Playing with rhqapi
+:tags: [rhq,scripting,javascript]
+---
+
+Recently I wanted to demo how to do something in RHQ's CLI. It was a fairly
+simple thing but our API being what it is, built for and implemented in
+Java, the result ended up being kinda verbose and didn't exactly look like
+your modern fluent Javascript code.
+
+So I thought I should finally give a whirl to the 
+https://github.com/rhq-project/samples/tree/master/cli/rhqapi[rhqapi] now
+that it has been 
+https://github.com/lzoubek/rhq/commit/73e5f3320b29aea9556a99784fc4e5dfe56ccb51[merged]
+to RHQ.
+
+I was impressed. The code is easy read and using our CLI and javascript
+completion, it even is quite easy to write. Also, there's a very nice suite
+of examples included with `rhqapi` so it is very easy to get started and
+have something done.
+
+I knew what I wanted to do and I would know how to do it using our "raw"
+remote API. I've never used `rhqapi` yet I was able to write the same thing
+using it in less then hour with the resulting code being at least 50%
+shorter and much easier to read than the raw API version would be.
+
+I merely wanted to mass-deploy a WAR file to all "localhost" virtual hosts
+of all Tomcat servers in a group. Here's the CommonJS module I ended up with
+using `rhqapi`. It is so self-explanatory, it doesn't even need comments ;):
+
+```javascript
+exports.group = function(name) {
+    var rhqapi = require("modules:/rhqapi")
+
+    var group = rhqapi.groups.find({'name':name})[0]
+
+    group.deploy = function(fileName) {
+        var resources = group.resources()
+        for (i in group.resources()) {
+            var localhost = resources[i].child({'name':'localhost'})
+            var fname = new java.io.File(fileName).name
+            localhost.createChild({
+                'name':fname,
+                'type': 'Tomcat Web Application (WAR)',
+                'content':fileName,
+                'config':{'explodeOnDeploy':false}
+            })
+        }
+    }
+
+    return group;
+}
+
+```
+
+You would use it like this:
+
+```javascript
+require("file:///tmp/tomcat-mass-deploy.js").group("tomcats").deploy("/tmp/my.war")
+```
+
+This stuff is good and I am very glad it finally made it into RHQ proper.
+Congrats Libor (now a full time RHQ developer) and Filip to a great library.
