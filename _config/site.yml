@@ -12,8 +12,9 @@ asciidoctor:
     sectanchors: ''
     icons: font
     source-highlighter: coderay
-    coderay-css: style
-
+    coderay-css: class
+    linenums: true
+    
 scss:
   :line_numbers: false
   :style: :expanded

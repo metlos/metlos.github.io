@@ -10,6 +10,7 @@
       }
     %link{ :rel=>'stylesheet', :type=>'text/css', :href=>"#{site.base_url}/stylesheets/styles.css" }
     %link{ :rel=>'stylesheet', :type=>'text/css', :href=>"#{site.base_url}/stylesheets/font-awesome/font-awesome.css" }
+    %link{ :rel=>'stylesheet', :type=>'text/css', :href=>"#{site.base_url}/stylesheets/coderay.css" }
     %script{ :type=>'text/javascript', :src=>"#{site.base_url}/javascripts/lightbox.min.js" }
     /[if lt IE 9]
       %script{ :type=>'text/javascript', :src=>'//html5shim.googlecode.com/svn/trunk/html5.js' }
@@ -17,22 +18,13 @@
     .navbar.navbar-inverse.navbar-fixed-top{ :role=>"navigation"}
       .container
         .navbar-header
-          %button.navbar-toggle{ :type=>"button", :"data-toggle"=>"collapse", :"data-target"=>".navbar-collapse" }
-            %span.sr-only Toggle navigation
-            %span.icon-bar
-            %span.icon-bar
-            %span.icon-bar
           %a.nav.navbar-brand{ :href=>"#{site.base_url}", :title=>"Reinventing The Wheel"}
             %i.fa.fa-refresh
             %i.fa.fa-cog            
-        .collapse.navbar-collapse
-          %ul.nav.navbar-nav
-            %li
-              %a{ :href=>"#{site.base_url}/posts", :title=>"Blog"} 
-                %i.fa.fa-pencil
-            %li
-              %a{ :href=>"#{site.base_url}/about", :title=>"About"}
-                %i.fa.fa-info
+          %a.nav.navbar-brand{ :href=>"#{site.base_url}/posts", :title=>"Blog"} 
+            %i.fa.fa-pencil
+          %a.nav.navbar-brand{ :href=>"#{site.base_url}/about", :title=>"About"}
+            %i.fa.fa-info
     .container{ :role => "main" }
       ~ content
       %hr

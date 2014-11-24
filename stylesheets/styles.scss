@@ -6,6 +6,15 @@
     font-family : $font-family-sans-serif;
 }
 
+.nav {
+  vertical-align: center;
+  padding: auto;
+}
+
+.navbar-brand {
+  padding-top: 0;
+}
+
 p {
     text-align: justify;
 }
