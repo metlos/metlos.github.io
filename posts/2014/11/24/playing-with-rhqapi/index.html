@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Reinventing The Wheel</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <style>
+      body {
+        padding-top: 60px;
+      }
+    </style>
+    <link href="http://lukas.krejci.pw/stylesheets/styles.css" rel="stylesheet" type="text/css">
+    <link href="http://lukas.krejci.pw/stylesheets/font-awesome/font-awesome.css" rel="stylesheet" type="text/css">
+    <link href="http://lukas.krejci.pw/stylesheets/coderay.css" rel="stylesheet" type="text/css">
+    <script src="http://lukas.krejci.pw/javascripts/lightbox.min.js" type="text/javascript"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shim.googlecode.com/svn/trunk/html5.js" type="text/javascript"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button class="navbar-toggle" data-target=".navbar-collapse" data-toggle="collapse" type="button">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+        </div>
+        <a class="nav navbar-brand" href="http://lukas.krejci.pw" title="Reinventing The Wheel">
+          <i class="fa fa-refresh"></i>
+          <i class="fa fa-circle-o"></i>
+        </a>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="http://lukas.krejci.pw/posts" title="Blog">
+                <i class="fa fa-pencil"></i>
+              </a>
+            </li>
+            <li>
+              <a href="http://lukas.krejci.pw/about" title="About">
+                <i class="fa fa-info"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid" role="main">
+      <div class="post-navigation">
+        <div class="previous">
+          <div class="label">
+            &laquo;
+          </div>
+          <div class="nav-link">
+            <a href="/posts/2014/03/26/my-git-aliases/">My git aliases</a>
+          </div>
+        </div>
+        <div class="next">
+        </div>
+      </div>
+      <h1 class="title">
+        Playing with rhqapi
+      </h1>
+      <div class="author">
+        posted on
+        <span class="date">
+          24 Nov 2014
+        </span>
+      </div>
+      <div class="tags">
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/rhq/">rhq</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/scripting/">scripting</a>
+        <a class="label label-info" href="http://lukas.krejci.pw/posts/tags/javascript/">javascript</a>
+      </div>
+      <div class="paragraph">
+      <p>Recently I wanted to demo how to do something in RHQ&#8217;s CLI. It was a fairly
+      simple thing but our API being what it is, built for and implemented in
+      Java, the result ended up being kinda verbose and didn&#8217;t exactly look like
+      your modern fluent Javascript code.</p>
+      </div>
+      <div class="paragraph">
+      <p>So I thought I should finally give a whirl to the
+      <a href="https://github.com/rhq-project/samples/tree/master/cli/rhqapi">rhqapi</a> now
+      that it has been
+      <a href="https://github.com/lzoubek/rhq/commit/73e5f3320b29aea9556a99784fc4e5dfe56ccb51">merged</a>
+      to RHQ.</p>
+      </div>
+      <div class="paragraph">
+      <p>I was impressed. The code is easy read and using our CLI and javascript
+      completion, it even is quite easy to write. Also, there&#8217;s a very nice suite
+      of examples included with <code>rhqapi</code> so it is very easy to get started and
+      have something done.</p>
+      </div>
+      <div class="paragraph">
+      <p>I knew what I wanted to do and I would know how to do it using our "raw"
+      remote API. I&#8217;ve never used <code>rhqapi</code> yet I was able to write the same thing
+      using it in less then hour with the resulting code being at least 50%
+      shorter and much easier to read than the raw API version would be.</p>
+      </div>
+      <div class="paragraph">
+      <p>I merely wanted to mass-deploy a WAR file to all "localhost" virtual hosts
+      of all Tomcat servers in a group. Here&#8217;s the CommonJS module I ended up with
+      using <code>rhqapi</code>. It is so self-explanatory, it doesn&#8217;t even need comments ;):</p>
+      </div>
+      <div class="listingblock">
+      <div class="content">
+      <pre class="CodeRay highlight"><code data-lang="javascript"><table class="CodeRay"><tr>&#x000A;  <td class="line-numbers"><pre>1&#x000A;2&#x000A;3&#x000A;4&#x000A;5&#x000A;6&#x000A;7&#x000A;8&#x000A;9&#x000A;<strong>10</strong>&#x000A;11&#x000A;12&#x000A;13&#x000A;14&#x000A;15&#x000A;16&#x000A;17&#x000A;18&#x000A;19&#x000A;<strong>20</strong>&#x000A;21</pre></td>
+        <td class="code"><pre>exports.<span class="function">group</span> = <span class="keyword">function</span>(name) {&#x000A;    <span class="keyword">var</span> rhqapi = require(<span class="string"><span class="delimiter">&quot;</span><span class="content">modules:/rhqapi</span><span class="delimiter">&quot;</span></span>)&#x000A;&#x000A;    <span class="keyword">var</span> group = rhqapi.groups.find({<span class="key"><span class="delimiter">'</span><span class="content">name</span><span class="delimiter">'</span></span>:name})[<span class="integer">0</span>]&#x000A;&#x000A;    group.<span class="function">deploy</span> = <span class="keyword">function</span>(fileName) {&#x000A;        <span class="keyword">var</span> resources = group.resources()&#x000A;        <span class="keyword">for</span> (i <span class="keyword">in</span> group.resources()) {&#x000A;            <span class="keyword">var</span> localhost = resources[i].child({<span class="key"><span class="delimiter">'</span><span class="content">name</span><span class="delimiter">'</span></span>:<span class="string"><span class="delimiter">'</span><span class="content">localhost</span><span class="delimiter">'</span></span>})&#x000A;            <span class="keyword">var</span> fname = <span class="keyword">new</span> java.io.File(fileName).name&#x000A;            localhost.createChild({&#x000A;                <span class="key"><span class="delimiter">'</span><span class="content">name</span><span class="delimiter">'</span></span>:fname,&#x000A;                <span class="key"><span class="delimiter">'</span><span class="content">type</span><span class="delimiter">'</span></span>: <span class="string"><span class="delimiter">'</span><span class="content">Tomcat Web Application (WAR)</span><span class="delimiter">'</span></span>,&#x000A;                <span class="key"><span class="delimiter">'</span><span class="content">content</span><span class="delimiter">'</span></span>:fileName,&#x000A;                <span class="key"><span class="delimiter">'</span><span class="content">config</span><span class="delimiter">'</span></span>:{<span class="key"><span class="delimiter">'</span><span class="content">explodeOnDeploy</span><span class="delimiter">'</span></span>:<span class="predefined-constant">false</span>}&#x000A;            })&#x000A;        }&#x000A;    }&#x000A;&#x000A;    <span class="keyword">return</span> group;&#x000A;}</pre></td>
+      </tr></table></code></pre>
+      </div>
+      </div>
+      <div class="paragraph">
+      <p>You would use it like this:</p>
+      </div>
+      <div class="listingblock">
+      <div class="content">
+      <pre class="CodeRay highlight"><code data-lang="javascript"><table class="CodeRay"><tr>&#x000A;  <td class="line-numbers"><pre>1</pre></td>
+        <td class="code"><pre>require(<span class="string"><span class="delimiter">&quot;</span><span class="content">file:///tmp/tomcat-mass-deploy.js</span><span class="delimiter">&quot;</span></span>).group(<span class="string"><span class="delimiter">&quot;</span><span class="content">tomcats</span><span class="delimiter">&quot;</span></span>).deploy(<span class="string"><span class="delimiter">&quot;</span><span class="content">/tmp/my.war</span><span class="delimiter">&quot;</span></span>)</pre></td>
+      </tr></table></code></pre>
+      </div>
+      </div>
+      <div class="paragraph">
+      <p>This stuff is good and I am very glad it finally made it into RHQ proper.
+      Congrats Libor (now a full time RHQ developer) and Filip to a great library.</p>
+      </div>
+      
+                  <div id="disqus_thread"></div>
+                  <script type="text/javascript">
+                  var disqus_shortname = 'lukaskrejcipw';
+                  var disqus_url = "http://lukas.krejci.pw/posts/2014/11/24/playing-with-rhqapi/";
+                  var disqus_developer = null;
+                  var disqus_identifier = "4f066483c45d4fd446203b54fd0f301db95ce741";
+                  (function() {
+                    var dsq = document.createElement("script"); dsq.type = "text/javascript"; dsq.async = true;
+                    dsq.src = "http://lukaskrejcipw.disqus.com/embed.js";
+                    (document.getElementsByTagName("head")[0] || document.getElementsByTagName("body")[0]).appendChild(dsq);
+                  })();
+                  </script>
+                  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript=lukaskrejcipw">comments powered by Disqus.</a></noscript>
+      <hr>
+      <footer>
+        <div class="links">
+          <a href="http://lukas.krejci.pw/blog.atom">
+            <i class="fa fa-rss"></i>
+          </a>
+          <a href="https://plus.google.com/+lukaskrejci/">
+            <i class="fa fa-google-plus"></i>
+          </a>
+          <a href="https://twitter.com/@krejcil">
+            <i class="fa fa-twitter"></i>
+          </a>
+          <a href="https://www.linkedin.com/profile/view?id=45241872">
+            <i class="fa fa-linkedin"></i>
+          </a>
+        </div>
+        <p>&copy; Lukáš Krejčí 2014</p>
+      </footer>
+    </div>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+    <script src="http://lukas.krejci.pw/javascripts/bootstrap/collapse.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount','UA-56804098-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+     var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+     ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+    </script>
+  </body>
+</html>

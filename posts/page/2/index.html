@@ -52,6 +52,27 @@
       <div class="post">
         <div class="header">
           <h3>
+            <a href="http://lukas.krejci.pw/posts/2011/10/10/using-byteman-to-detect-native-memory-leaks/">Using Byteman to detect native memory leaks</a>
+          </h3>
+          <p class="author">
+            posted on
+            <strong class="date">10 October 2011</strong>
+          </p>
+        </div>
+        <p class="content">
+          In <a href="http://rhq-project.org">RHQ</a> we use the <a href="http://augeas.net">Augeas</a>
+          library to do the configuration file parsing and updates for us in some
+          of the plugins. Augeas in itself is pretty cool and the language for
+          describing the structure of arbitrary configuration files and howto
+          update them is pretty powerful. The only downside to using Augeas is
+          that it is a C library and we therefore have to bind with it and use it
+          more carefully so that we don&#8217;t leak its native resources that aren&#8217;t
+          under control of JVM&#8217;s garbage collector.
+        </p>
+      </div>
+      <div class="post">
+        <div class="header">
+          <h3>
             <a href="http://lukas.krejci.pw/posts/2011/08/04/making-testng-listeners-apply-to-only-certain-classes/">Making TestNG @Listeners apply to only certain classes</a>
           </h3>
           <p class="author">
